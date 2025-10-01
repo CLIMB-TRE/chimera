@@ -56,12 +56,12 @@
                     "help_text": "Path to a pre-built sylph database for the reference database you are using.",
                     "fa_icon": "fas fa-dna"
                 },
-                "ncbi_taxonomy": {
+                "database_metadata": {
                     "type": "string",
                     "format": "directory-path",
                     "exists": true,
-                    "description": "Path to NCBI taxonomy database.",
-                    "help_text": "Path to a pre-built NCBI taxonomy database for the reference database you are using.",
+                    "description": "Path to database metadata.",
+                    "help_text": "Path to a pre-built database metadata for the alignment reference database you are using.",
                     "fa_icon": "fas fa-dna"
                 }
             }
