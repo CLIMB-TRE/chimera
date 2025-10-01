@@ -56,6 +56,14 @@
                     "help_text": "Path to a pre-built sylph database for the reference database you are using.",
                     "fa_icon": "fas fa-dna"
                 },
+                "sylph_taxdb": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to sylph taxonomy database.",
+                    "help_text": "Path to a pre-built sylph taxonomy database for the reference database you are using.",
+                    "fa_icon": "fas fa-dna"
+                },
                 "database_metadata": {
                     "type": "string",
                     "format": "directory-path",
