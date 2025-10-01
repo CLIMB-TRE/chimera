@@ -9,6 +9,7 @@ process ALIGNMENT_REPORT {
 
     input:
     tuple val(meta), path(depth_tsv), path(coverage_tsv)
+    path database_metadata
 
     output:
     tuple val(meta), path("*.alignment_report.tsv"), emit: alignment_report
@@ -19,6 +20,7 @@ process ALIGNMENT_REPORT {
     generate_alignment_report.py \\
         --depth_tsv ${depth_tsv} \\
         --coverage_tsv ${coverage_tsv} \\
+        --database_metadata ${database_metadata} \\
         > ${prefix}.alignment_report.tsv
     """
 

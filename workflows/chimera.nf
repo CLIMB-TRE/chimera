@@ -35,6 +35,7 @@ workflow CHIMERA {
 
     mm2_index = file(params.mm2_index, checkIfExists: true)
     bwa_index = file(params.bwa_index, checkIfExists: true)
+    database_metadata = file(params.database_metadata, checkIfExists: true)
     sylph_db = file(params.sylph_db, checkIfExists: true)
     sylph_taxdb = file(params.sylph_taxdb, checkIfExists: true)
 
