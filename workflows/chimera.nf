@@ -37,7 +37,6 @@ workflow CHIMERA {
     bwa_index = file(params.bwa_index, checkIfExists: true)
     sylph_db = file(params.sylph_db, checkIfExists: true)
     sylph_taxdb = file(params.sylph_taxdb, checkIfExists: true)
-    ncbi_taxonomy = file(params.ncbi_taxonomy, checkIfExists: true)
 
     //
     // Run slyph and alignments to reference db
