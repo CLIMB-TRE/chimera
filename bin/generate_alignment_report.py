@@ -132,6 +132,7 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
 
     return stats
 
+
 def reference_metadata_parser(database_metadata: str) -> dict:
     """
     Parse a database metadata TSV file and return a dictionary with reference information.
@@ -155,22 +156,12 @@ def reference_metadata_parser(database_metadata: str) -> dict:
 
     return metadata_dict
 
+
 def run(args):
 
     depth_arrays = depth_tsv_to_np_arrays(args.depth_tsv)
     coverage_info = coverage_tsv_parser(args.coverage_tsv)
     reference_metadata = reference_metadata_parser(args.database_metadata)
-
-    out_rows = 
-
-    for ref in depth_arrays:
-        if ref in coverage_info:
-            stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
-            stats["reference"] = ref
-            out_rows.append(stats)
-        else:
-            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
-            sys.exit(1)
 
     # Print report
     writer = csv.DictWriter(
@@ -179,7 +170,7 @@ def run(args):
         fieldnames=[
             "reference",
             "tax_id",
-            "human_readable",            
+            "human_readable",
             "evenness_value",
             "mean_depth",
             "1x_coverage",
@@ -190,10 +181,17 @@ def run(args):
     )
     writer.writeheader()
 
-    for row in out_rows:
-        row["tax_id"] = reference_metadata[row["reference"]]["tax_id"]
-        row["human_readable"] = reference_metadata[row["reference"]]["human_readable"]
-        writer.writerow(row)
+    for ref in depth_arrays:
+        if ref in coverage_info:
+            stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
+            stats["reference"] = ref
+        else:
+            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
+            sys.exit(1)
+
+            stats["tax_id"] = reference_metadata[ref]["tax_id"]
+            stats["human_readable"] = reference_metadata[ref]["human_readable"]
+            writer.writerow(stats)
 
 
 def main():
