@@ -64,6 +64,8 @@ workflow CHIMERA {
         illumina: meta.platform == "illumina" || meta.platform == "illumina.se"
     }
 
+    ch_samplesheet_branched.ont = ch_samplesheet_branched.ont.map { meta, fastq_1, _fastq_2 -> [meta, fastq_1] }
+
     MINIMAP2_ALIGN(ch_samplesheet_branched.ont, [[:], mm2_index], true, "bai", false, false)
     ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions.first())
 
