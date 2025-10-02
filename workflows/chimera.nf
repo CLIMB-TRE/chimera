@@ -42,8 +42,18 @@ workflow CHIMERA {
     //
     // Run slyph and alignments to reference db
     //
+
+    ch_sylph_input = ch_samplesheet.map { meta, fastq_1, fastq_2 ->
+        if (meta.platform == "ont") {
+            return [meta + [single_end: true], [fastq_1]]
+        }
+        else {
+            return [meta + [single_end: false], [fastq_1, fastq_2]]
+        }
+    }
+
     SYLPH_PROFILE(
-        ch_samplesheet,
+        ch_sylph_input,
         sylph_db,
     )
     ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions.first())
