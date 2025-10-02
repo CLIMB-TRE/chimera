@@ -43,35 +43,25 @@ workflow CHIMERA {
     // Run slyph and alignments to reference db
     //
 
-    ch_sylph_input = ch_samplesheet.map { meta, fastq_1, fastq_2 ->
-        if (meta.platform == "ont") {
-            return [meta + [single_end: true], [fastq_1]]
-        }
-        else {
-            return [meta + [single_end: false], [fastq_1, fastq_2]]
-        }
-    }
-
     SYLPH_PROFILE(
-        ch_sylph_input,
+        ch_samplesheet,
         sylph_db,
     )
     ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions.first())
 
     // Run the appropriate aligner based on platform
-    ch_samplesheet_branched = ch_samplesheet.branch { meta, _fastq_1, _fastq_2 ->
+    ch_samplesheet_branched = ch_samplesheet.branch { meta, _fastq ->
         ont: meta.platform == "ont"
         illumina: meta.platform == "illumina" || meta.platform == "illumina.se"
     }
 
-
-    MINIMAP2_ALIGN(ch_samplesheet_branched.ont.map { meta, fastq_1, _fastq_2 -> [meta, fastq_1] }, [[:], mm2_index], true, "bai", false, false)
+    MINIMAP2_ALIGN(ch_samplesheet_branched.ont, [[:], mm2_index], true, "bai", false, false)
     ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions.first())
 
     SAMTOOLS_SORT(MINIMAP2_ALIGN.out.bam, [[:], []], "bai")
     ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
 
-    BWAMEM2_MEM(ch_samplesheet_branched.illumina.map { meta, fastq_1, fastq_2 -> [meta, [fastq_1, fastq_2]] }, [[:], bwa_index], [[:], []], true)
+    BWAMEM2_MEM(ch_samplesheet_branched.illumina, [[:], bwa_index], [[:], []], true)
     ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions.first())
 
     ch_bams = SAMTOOLS_SORT.out.bam.mix(BWAMEM2_MEM.out.bam)
