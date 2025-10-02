@@ -71,7 +71,7 @@ workflow CHIMERA {
     SAMTOOLS_SORT(MINIMAP2_ALIGN.out.bam, [[:], []], "bai")
     ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
 
-    BWAMEM2_MEM(ch_samplesheet_branched.illumina, [[:], bwa_index], [[:], []], true)
+    BWAMEM2_MEM(ch_samplesheet_branched.illumina.map { meta, fastq_1, fastq_2 -> [meta, [fastq_1, fastq_2]] }, [[:], bwa_index], [[:], []], true)
     ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions.first())
 
     ch_bams = SAMTOOLS_SORT.out.bam.mix(BWAMEM2_MEM.out.bam)
