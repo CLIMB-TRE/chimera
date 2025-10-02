@@ -185,13 +185,12 @@ def run(args):
         if ref in coverage_info:
             stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
             stats["reference"] = ref
-        else:
-            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
-            sys.exit(1)
-
             stats["tax_id"] = reference_metadata[ref]["tax_id"]
             stats["human_readable"] = reference_metadata[ref]["human_readable"]
             writer.writerow(stats)
+        else:
+            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
+            sys.exit(1)
 
 
 def main():
