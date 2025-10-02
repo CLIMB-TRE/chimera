@@ -42,13 +42,11 @@ workflow CHIMERA {
     //
     // Run slyph and alignments to reference db
     //
-    println(bwa_index)
-
     SYLPH_PROFILE(
         ch_samplesheet,
         sylph_db,
     )
-    ch_versions = ch_versions.mix(SYLPH_PROFILE.versions.first())
+    ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions.first())
 
     // Run the appropriate aligner based on platform
     ch_samplesheet_branched = ch_samplesheet.branch { meta, _fastq_1, _fastq_2 ->
@@ -57,18 +55,18 @@ workflow CHIMERA {
     }
 
     MINIMAP2_ALIGN(ch_samplesheet_branched.ont, [[:], mm2_index], true, "bai", false, false)
-    ch_versions = ch_versions.mix(MINIMAP2_ALIGN.versions.first())
+    ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions.first())
 
     SAMTOOLS_SORT(MINIMAP2_ALIGN.out.bam, [[:], []], "bai")
-    ch_versions = ch_versions.mix(SAMTOOLS_SORT.versions.first())
+    ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
 
     BWAMEM2_MEM(ch_samplesheet_branched.illumina, [[:], bwa_index], [[:], []], true)
-    ch_versions = ch_versions.mix(BWAMEM2_MEM.versions.first())
+    ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions.first())
 
     ch_bams = SAMTOOLS_SORT.out.bam.mix(BWAMEM2_MEM.out.bam)
 
     SAMTOOLS_DEPTH(ch_bams, [[:], []])
-    ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.versions.first())
+    ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.out.versions.first())
 
     ch_bams_sorted_indexed = BWAMEM2_MEM.out.bam
         .join(BWAMEM2_MEM.out.csi, failOnDuplicate: true, failOnMismatch: true)
@@ -81,7 +79,7 @@ workflow CHIMERA {
         )
 
     SAMTOOLS_COVERAGE(ch_bams_sorted_indexed, [[:], []], [[:], []])
-    ch_versions = ch_versions.mix(SAMTOOLS_COVERAGE.versions.first())
+    ch_versions = ch_versions.mix(SAMTOOLS_COVERAGE.out.versions.first())
 
     SYLPH_TAXONOMY(
         SYLPH_PROFILE.out.profile_out,
