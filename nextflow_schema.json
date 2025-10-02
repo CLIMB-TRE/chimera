@@ -40,11 +40,11 @@
                     "help_text": "Path to a pre-built minimap2 index for the reference database you are using. If you don't provide this, the pipeline will build the index itself, but this may take some time.",
                     "fa_icon": "fas fa-dna"
                 },
-                "bwa_index": {
+                "bwa_index_prefix": {
                     "type": "string",
                     "format": "file-path",
                     "exists": true,
-                    "description": "Path to BWA index for reference db.",
+                    "description": "Path to BWA index for reference db. e.g. if your index files are named ref.fa, ref.fa.amb, ref.fa.ann, ref.fa.bwt, ref.fa.pac, ref.fa.sa then you should provide the path to 'ref.fa' here.",
                     "help_text": "Path to a pre-built BWA index for the reference database you are using.",
                     "fa_icon": "fas fa-dna"
                 },

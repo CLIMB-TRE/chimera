@@ -42,7 +42,7 @@ workflow CHIMERA {
     //
     // Run slyph and alignments to reference db
     //
-    bwa_index.view()
+    println(bwa_index)
 
     SYLPH_PROFILE(
         ch_samplesheet,
