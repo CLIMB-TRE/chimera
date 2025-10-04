@@ -69,8 +69,11 @@ workflow CHIMERA {
     SAMTOOLS_DEPTH(ch_bams, [[:], []])
     ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.out.versions.first())
 
+    SAMTOOLS_INDEX(BWAMEM2_MEM.out.bam)
+    ch_versions = ch_versions.mix(SAMTOOLS_INDEX.out.versions.first())
+
     ch_bams_sorted_indexed = BWAMEM2_MEM.out.bam
-        .join(BWAMEM2_MEM.out.csi, failOnDuplicate: true, failOnMismatch: true)
+        .join(SAMTOOLS_INDEX.out.bai, failOnDuplicate: true, failOnMismatch: true)
         .mix(
             SAMTOOLS_SORT.out.bam.join(
                 SAMTOOLS_SORT.out.bai,
