@@ -65,7 +65,7 @@ def add_taxon_data_to_report(report_data: list, taxonomy_data: dict) -> list:
 
     merged_data = []
     for row in report_data:
-        contig_fname = genome_file_to_gcf_acc(row["contig_fname"])
+        contig_fname = genome_file_to_gcf_acc(row["Genome_file"])
         taxon_info = taxonomy_data.get(contig_fname)
         if not taxon_info:
             raise ValueError(
