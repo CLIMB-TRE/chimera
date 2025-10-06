@@ -5,6 +5,12 @@ from pathlib import Path
 import sys
 
 
+def genome_file_to_gcf_acc(file_name: str) -> str:
+    if "ASM" in file_name:
+        return file_name.split("/")[-1].split("_ASM")[0]
+    return file_name.split("/")[-1].split("_genomic")[0]
+
+
 def read_sylph_report(sylph_report_path: Path):
     """
     Reads a Sylph report file and returns a list of dictionaries representing each row.
@@ -59,7 +65,7 @@ def add_taxon_data_to_report(report_data: list, taxonomy_data: dict) -> list:
 
     merged_data = []
     for row in report_data:
-        contig_fname = row["Genome_file"].rsplit("/", 1)[-1]  # Get the filename only
+        contig_fname = genome_file_to_gcf_acc(row["contig_fname"])
         taxon_info = taxonomy_data.get(contig_fname)
         if not taxon_info:
             raise ValueError(
