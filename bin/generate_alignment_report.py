@@ -169,8 +169,10 @@ def run(args):
         delimiter="\t",
         fieldnames=[
             "reference",
+            "contig_description",
             "tax_id",
             "human_readable",
+            "contig_length",
             "evenness_value",
             "mean_depth",
             "1x_coverage",
@@ -187,6 +189,8 @@ def run(args):
             stats["reference"] = ref
             stats["tax_id"] = reference_metadata[ref]["tax_id"]
             stats["human_readable"] = reference_metadata[ref]["human_readable"]
+            stats["contig_description"] = reference_metadata[ref]["seq_description"]
+            stats["contig_length"] = reference_metadata[ref]["sequence_length"]
             writer.writerow(stats)
         else:
             print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
