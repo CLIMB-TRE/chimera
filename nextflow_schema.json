@@ -74,6 +74,21 @@
                 }
             }
         },
+        "pipeline_options": {
+            "title": "Pipeline options",
+            "type": "object",
+            "fa_icon": "fas fa-cogs",
+            "description": "Options to configure the pipeline behaviour.",
+            "properties": {
+                "sylph_min_ani": {
+                    "type": "int",
+                    "description": "Minimum ANI for Sylph.",
+                    "help_text": "Minimum Average Nucleotide Identity (ANI) for Sylph to output a match.",
+                    "minimum": 0,
+                    "maximum": 100
+                }
+            }
+        },
         "institutional_config_options": {
             "title": "Institutional config options",
             "type": "object",
