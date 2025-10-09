@@ -81,7 +81,7 @@
             "description": "Options to configure the pipeline behaviour.",
             "properties": {
                 "sylph_min_ani": {
-                    "type": "int",
+                    "type": "integer",
                     "description": "Minimum ANI for Sylph.",
                     "help_text": "Minimum Average Nucleotide Identity (ANI) for Sylph to output a match.",
                     "minimum": 0,
@@ -198,6 +198,9 @@
     "allOf": [
         {
             "$ref": "#/$defs/input_output_options"
+        },
+        {
+            "$ref": "#/$defs/pipeline_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"
