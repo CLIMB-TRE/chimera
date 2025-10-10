@@ -92,7 +92,7 @@ workflow CHIMERA {
 
     ch_alignment_report_input = SAMTOOLS_DEPTH.out.tsv
         .join(SAMTOOLS_COVERAGE.out.coverage, failOnDuplicate: true, failOnMismatch: true)
-        .join(ch_bams_sorted_indexed, failOnDuplicate: true, failOnMismatch: true)
+        .join(ch_bams, failOnDuplicate: true, failOnMismatch: true)
 
     ALIGNMENT_REPORT(
         ch_alignment_report_input,
