@@ -13,6 +13,7 @@ def generate_bam_stats(bam_file: str) -> dict:
        1. the mean read BLAST-like identity with reference sequences.
        2. Duplication rate (percentage of reads which start and end at the same position as another read).
        3. Mean alignment length.
+       4. Forward strand proportion (percentage of reads mapped to the forward strand) -> strand bias.
 
     Parameters
     ----------
@@ -41,6 +42,7 @@ def generate_bam_stats(bam_file: str) -> dict:
                 "alignment_lengths": [],
                 "start_end_positions": {},
                 "num_reads": 0,
+                "forward_reads": 0,
             },
         )
         stats_dict[ref_name]["num_reads"] += 1
@@ -62,18 +64,22 @@ def generate_bam_stats(bam_file: str) -> dict:
         stats_dict[ref_name]["identities"].append(identity)
         stats_dict[ref_name]["alignment_lengths"].append(aln_length)
 
+        if not read.is_reverse:
+            stats_dict[ref_name]["forward_reads"] += 1
+
     bam.close()
 
     out_stats = {}
 
     for ref in stats_dict:
         stats = stats_dict[ref]
-        duplication_rate = (
-            sum(
-                x for x in stats_dict[ref_name]["start_end_positions"].values() if x > 1
-            )
-            / stats["num_reads"]
-            * 100
+        duplication_rate = round(
+            (
+                sum(x - 1 for x in stats["start_end_positions"].values())
+                / stats["num_reads"]
+                * 100
+            ),
+            2,
         )
         out_stats[ref] = {
             "mean_identity": (
@@ -84,6 +90,12 @@ def generate_bam_stats(bam_file: str) -> dict:
                 round(np.mean(stats["alignment_lengths"]), 2)
                 if stats["alignment_lengths"]
                 else 0
+            ),
+            "forward_proportion": (
+                round(
+                    stats["forward_reads"] / stats["num_reads"] * 100,
+                    2,
+                )
             ),
         }
 
@@ -266,6 +278,7 @@ def run(args):
             "mapped_bases",
             "mean_read_identity",
             "read_duplication_rate",
+            "forward_proportion",
             "mean_aln_length",
         ],
     )
@@ -287,6 +300,7 @@ def run(args):
             stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
             stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
             stats["mean_aln_length"] = bam_stats[ref]["mean_aln_length"]
+            stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
