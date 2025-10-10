@@ -73,14 +73,15 @@ def generate_bam_stats(bam_file: str) -> dict:
 
     for ref in stats_dict:
         stats = stats_dict[ref]
-        duplication_rate = round(
-            (
-                sum(x for x in stats["start_end_positions"].values() if x > 1)
-                / stats["num_reads"]
-                * 100
-            ),
-            2,
-        )
+        duplicates = sum(x for x in stats["start_end_positions"].values() if x > 1)
+        if duplicates > 0:
+            duplication_rate = round(
+                (duplicates / stats["num_reads"] * 100),
+                2,
+            )
+        else:
+            duplication_rate = 0
+
         mean_identity = round(np.mean(stats["identities"]), 2)
         mean_aln_length = round(np.mean(stats["alignment_lengths"]), 2)
         forward_proportion = round(
