@@ -39,7 +39,7 @@ def generate_bam_stats(bam_file: str) -> dict:
             {
                 "identities": [],
                 "alignment_lengths": [],
-                "duplicate_count": 0,
+                "start_end_positions": {},
                 "num_reads": 0,
             },
         )
@@ -48,16 +48,19 @@ def generate_bam_stats(bam_file: str) -> dict:
         try:
             nm_tag = int(read.get_tag("NM"))
         except Exception:
+            print("NM tag not found for read, exiting:")
             print(read)
+            sys.exit(1)
 
         aln_length = read.query_alignment_length
         identity = ((aln_length - nm_tag) / aln_length) * 100
 
+        start_end_tuple = (read.reference_start, read.reference_end)
+        stats_dict[ref_name]["start_end_positions"].setdefault(start_end_tuple, 0)
+        stats_dict[ref_name]["start_end_positions"][start_end_tuple] += 1
+
         stats_dict[ref_name]["identities"].append(identity)
         stats_dict[ref_name]["alignment_lengths"].append(aln_length)
-
-        if read.is_duplicate:
-            stats_dict[ref_name]["duplicate_count"] += 1
 
     bam.close()
 
@@ -65,12 +68,18 @@ def generate_bam_stats(bam_file: str) -> dict:
 
     for ref in stats_dict:
         stats = stats_dict[ref]
+        duplication_rate = (
+            sum(
+                x for x in stats_dict[ref_name]["start_end_positions"].values() if x > 1
+            )
+            / stats["num_reads"]
+            * 100
+        )
         out_stats[ref] = {
             "mean_identity": (
                 round(np.mean(stats["identities"]), 2) if stats["identities"] else 0
             ),
-            "duplication_rate": round(stats["duplicate_count"] / stats["num_reads"])
-            * 100,
+            "duplication_rate": duplication_rate if duplication_rate > 0 else 0,
             "mean_aln_length": (
                 round(np.mean(stats["alignment_lengths"]), 2)
                 if stats["alignment_lengths"]
