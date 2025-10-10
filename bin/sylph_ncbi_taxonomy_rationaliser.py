@@ -9,6 +9,7 @@ import pybktree
 import Levenshtein
 from tqdm import tqdm
 from collections import namedtuple
+import re
 
 TAXON = namedtuple("TAXON", ["tax_id", "human_readable", "rank"])
 
@@ -28,14 +29,15 @@ def taxon_levenshtein_distance(t1: TAXON, t2: TAXON) -> int:
 
 
 def taxon_string_to_taxon_name(
-    name_tree: pybktree.BKTree, taxon_string: str, args: argparse.Namespace
+    name_tree: pybktree.BKTree,
+    taxon_string: str,
+    tally: dict,
+    args: argparse.Namespace,
 ) -> TAXON | None:
+
     lineage_parts = taxon_string.split(";")
 
-    lineage_names = [x[3:] for x in lineage_parts]
-    lineage_ranks = [x[0] for x in lineage_parts]
-
-    for name, rank in zip(reversed(lineage_names), reversed(lineage_ranks)):
+    for name, rank in reversed([(x[3:], x[0]) for x in lineage_parts]):
         if args.verbose:
             print(f"Looking up taxon name {name} with rank {rank}", file=sys.stderr)
 
@@ -59,6 +61,7 @@ def taxon_string_to_taxon_name(
                             f"Selected taxon {taxon} based on rank {rank}",
                             file=sys.stderr,
                         )
+                    tally["fuzzy matched"] += 1
                     return taxon[1]
 
     return None
@@ -70,6 +73,7 @@ def run(args: argparse.Namespace):
 
     parsed_taxonomy = {}
     tax_id_name_lookup = {}
+    name_tax_id_lookup = {}
     rank_lookup = {}
 
     print(f"Loading NCBI taxonomy names from {names_dmp}", file=sys.stderr)
@@ -106,18 +110,47 @@ def run(args: argparse.Namespace):
             fieldnames=["contig_fname", "taxon_string"],
         )
 
-        assigned_taxa = {}
+        sylph_taxonomy = []
+        for row in tqdm(reader, desc="Pre-processing taxonomy strings"):
+            subbed_taxon_string = re.sub(r"_[A-Za-z]\s", " ", row["taxon_string"])
+            sylph_taxonomy.append(
+                {
+                    "contig_fname": row["contig_fname"],
+                    "taxon_string": row["taxon_string"],
+                    "subbed_taxon_string": subbed_taxon_string,
+                }
+            )
 
-        for row in tqdm(reader, desc="Processing rows"):
-            taxon = assigned_taxa.get(row["taxon_string"])
+        assigned_taxa = {}
+        tally = {"fuzzy matched": 0, "cached": 0, "not matched": 0}
+
+        for i, row in enumerate(
+            tqdm(sylph_taxonomy, desc="Matching taxon strings to NCBI taxIDs")
+        ):
+            if i > 0 and i % 10000 == 0:
+                print(f"Processed {i} rows, current tally:\n{tally}", file=sys.stderr)
+
+            taxon = assigned_taxa.get(row["subbed_taxon_string"])
             if not taxon:
-                taxon = taxon_string_to_taxon_name(name_tree, row["taxon_string"], args)
+                taxon = taxon_string_to_taxon_name(
+                    name_tree,
+                    row["subbed_taxon_string"],
+                    tally,
+                    args,
+                )
                 if taxon:
-                    assigned_taxa[row["taxon_string"]] = taxon
+                    assigned_taxa[row["subbed_taxon_string"]] = taxon
+            else:
+                if args.verbose:
+                    print(
+                        f"Re-used cached taxon for taxon string {row['subbed_taxon_string']} -> {taxon}",
+                        file=sys.stderr,
+                    )
+                tally["cached"] += 1
 
             if args.verbose:
                 print(
-                    f"Resolved taxon string {row['taxon_string']} to taxon name {taxon.human_readable if taxon else 'None'}",
+                    f"Resolved taxon string {row['subbed_taxon_string']} to taxon name {taxon.human_readable if taxon else 'None'}",
                     file=sys.stderr,
                 )
             if not taxon:
@@ -126,6 +159,7 @@ def run(args: argparse.Namespace):
                         f"Warning: could not find taxon name for taxon string {row['taxon_string']} (contig file {row['contig_fname']})",
                         file=sys.stderr,
                     )
+                tally["not matched"] += 1
                 print(
                     "\t".join(
                         (

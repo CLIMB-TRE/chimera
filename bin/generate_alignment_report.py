@@ -4,6 +4,81 @@ import numpy as np
 import math
 import csv
 import sys
+import pysam
+
+
+def generate_bam_stats(bam_file: str) -> dict:
+    """
+    Get basic stats for each CHROM from a BAM file, specifically:
+       1. the mean read BLAST-like identity with reference sequences.
+       2. Duplication rate (percentage of reads which start and end at the same position as another read).
+       3. Mean alignment length.
+
+    Parameters
+    ----------
+    bam_file : str
+        Path to the BAM file.
+
+    Returns
+    -------
+    dict
+        A dictionary where keys are reference names and values are stats dictionaries.
+    """
+    stats_dict = {}
+
+    bam = pysam.AlignmentFile(bam_file, "rb")
+
+    for read in bam:
+        if read.is_unmapped:
+            continue
+
+        ref_name = bam.get_reference_name(read.reference_id)
+
+        stats_dict.setdefault(
+            ref_name,
+            {
+                "identities": [],
+                "alignment_lengths": [],
+                "duplicate_count": 0,
+                "num_reads": 0,
+            },
+        )
+        stats_dict[ref_name]["num_reads"] += 1
+
+        try:
+            nm_tag = int(read.get_tag("NM"))
+        except Exception:
+            print(read)
+
+        aln_length = read.query_alignment_length
+        identity = ((aln_length - nm_tag) / aln_length) * 100
+
+        stats_dict[ref_name]["identities"].append(identity)
+        stats_dict[ref_name]["alignment_lengths"].append(aln_length)
+
+        if read.is_duplicate:
+            stats_dict[ref_name]["duplicate_count"] += 1
+
+    bam.close()
+
+    out_stats = {}
+
+    for ref in stats_dict:
+        stats = stats_dict[ref]
+        out_stats[ref] = {
+            "mean_identity": (
+                round(np.mean(stats["identities"]), 2) if stats["identities"] else 0
+            ),
+            "duplication_rate": round(stats["duplicate_count"] / stats["num_reads"])
+            * 100,
+            "mean_aln_length": (
+                round(np.mean(stats["alignment_lengths"]), 2)
+                if stats["alignment_lengths"]
+                else 0
+            ),
+        }
+
+    return out_stats
 
 
 def coverage_evenness(coverage: np.ndarray, num_points: int = 1000) -> int:
@@ -162,6 +237,7 @@ def run(args):
     depth_arrays = depth_tsv_to_np_arrays(args.depth_tsv)
     coverage_info = coverage_tsv_parser(args.coverage_tsv)
     reference_metadata = reference_metadata_parser(args.database_metadata)
+    bam_stats = generate_bam_stats(args.bam)
 
     # Print report
     writer = csv.DictWriter(
@@ -179,6 +255,9 @@ def run(args):
             "10x_coverage",
             "mapped_reads",
             "mapped_bases",
+            "mean_read_identity",
+            "read_duplication_rate",
+            "mean_aln_length",
         ],
     )
     writer.writeheader()
@@ -191,10 +270,19 @@ def run(args):
             stats["human_readable"] = reference_metadata[ref]["human_readable"]
             stats["contig_description"] = reference_metadata[ref]["seq_description"]
             stats["contig_length"] = reference_metadata[ref]["sequence_length"]
-            writer.writerow(stats)
         else:
             print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
             sys.exit(1)
+
+        if ref in bam_stats:
+            stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
+            stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
+            stats["mean_aln_length"] = bam_stats[ref]["mean_aln_length"]
+        else:
+            print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
+            sys.exit(1)
+
+        writer.writerow(stats)
 
 
 def main():
@@ -221,6 +309,7 @@ def main():
         required=True,
         help="Path to the database metadata TSV file, containing reference taxonomy etc.",
     )
+    parser.add_argument("--bam", type=str, required=True, help="Path to the BAM file.")
     args = parser.parse_args()
 
     run(args)

@@ -24,9 +24,10 @@ def read_sylph_report(sylph_report_path: Path):
 
     with open(sylph_report_path, "r") as file:
         reader = csv.DictReader(file, delimiter="\t")
+        headers = reader.fieldnames
         report_data = [row for row in reader]
 
-    return report_data
+    return headers, report_data
 
 
 def read_sylph_taxonomy(sylph_taxonomy_path: Path):
@@ -44,11 +45,12 @@ def read_sylph_taxonomy(sylph_taxonomy_path: Path):
         reader = csv.DictReader(
             file,
             delimiter="\t",
-            fieldnames=["contig_fname", "taxon_string", "tax_id", "human_readable"],
+            fieldnames=["contig_id", "taxon_string", "tax_id", "human_readable"],
         )
-        taxonomy_data = {row["contig_fname"]: row for row in reader}
+        headers = reader.fieldnames
+        taxonomy_data = {row["contig_id"]: row for row in reader}
 
-    return taxonomy_data
+    return headers, taxonomy_data
 
 
 def add_taxon_data_to_report(report_data: list, taxonomy_data: dict) -> list:
@@ -78,15 +80,12 @@ def add_taxon_data_to_report(report_data: list, taxonomy_data: dict) -> list:
 
 
 def run(args):
-    report_data = read_sylph_report(args.sylph_report)
-    taxonomy_data = read_sylph_taxonomy(args.sylph_taxonomy)
+    sylph_headers, report_data = read_sylph_report(args.sylph_report)
+    taxonomy_headers, taxonomy_data = read_sylph_taxonomy(args.sylph_taxonomy)
     merged_data = add_taxon_data_to_report(report_data, taxonomy_data)
 
-    if not merged_data:
-        sys.exit(2)
-
     # Output the merged data
-    fieldnames = list(merged_data[0].keys())
+    fieldnames = sylph_headers + taxonomy_headers
     writer = csv.DictWriter(
         sys.stdout,
         fieldnames=fieldnames,
