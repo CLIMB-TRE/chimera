@@ -75,7 +75,7 @@ def generate_bam_stats(bam_file: str) -> dict:
         stats = stats_dict[ref]
         duplication_rate = round(
             (
-                sum(x - 1 for x in stats["start_end_positions"].values())
+                sum(x for x in stats["start_end_positions"].values() if x > 1)
                 / stats["num_reads"]
                 * 100
             ),
