@@ -81,22 +81,18 @@ def generate_bam_stats(bam_file: str) -> dict:
             ),
             2,
         )
+        mean_identity = round(np.mean(stats["identities"]), 2)
+        mean_aln_length = round(np.mean(stats["alignment_lengths"]), 2)
+        forward_proportion = round(
+            stats["forward_reads"] / stats["num_reads"] * 100,
+            2,
+        )
+
         out_stats[ref] = {
-            "mean_identity": (
-                round(np.mean(stats["identities"]), 2) if stats["identities"] else 0
-            ),
+            "mean_identity": mean_identity if mean_identity > 0 else 0,
             "duplication_rate": duplication_rate if duplication_rate > 0 else 0,
-            "mean_aln_length": (
-                round(np.mean(stats["alignment_lengths"]), 2)
-                if stats["alignment_lengths"]
-                else 0
-            ),
-            "forward_proportion": (
-                round(
-                    stats["forward_reads"] / stats["num_reads"] * 100,
-                    2,
-                )
-            ),
+            "mean_aln_length": mean_aln_length if mean_aln_length > 0 else 0,
+            "forward_proportion": forward_proportion if forward_proportion > 0 else 0,
         }
 
     return out_stats
