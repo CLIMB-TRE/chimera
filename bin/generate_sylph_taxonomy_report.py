@@ -84,6 +84,10 @@ def run(args):
     taxonomy_headers, taxonomy_data = read_sylph_taxonomy(args.sylph_taxonomy)
     merged_data = add_taxon_data_to_report(report_data, taxonomy_data)
 
+    if not merged_data:
+        print("No data to write after merging Sylph report and taxonomy.")
+        sys.exit(2)
+
     # Output the merged data
     fieldnames = sylph_headers + taxonomy_headers
     writer = csv.DictWriter(
