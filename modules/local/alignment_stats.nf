@@ -4,8 +4,8 @@ process ALIGNMENT_REPORT {
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'oras://community.wave.seqera.io/library/numpy:2.3.3--c8ac2f6d040d90b0'
-        : 'community.wave.seqera.io/library/numpy:2.3.3--f39d62792aa0b968'}"
+        ? 'oras://community.wave.seqera.io/library/pip_numpy_pysam:410caf1b9aff14b8'
+        : 'community.wave.seqera.io/library/pip_numpy_pysam:b0f6802385070dc7'}"
 
     input:
     tuple val(meta), path(depth_tsv), path(coverage_tsv), path(bam)
