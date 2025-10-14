@@ -85,7 +85,7 @@ def generate_bam_stats(bam_file: str) -> dict:
         mean_identity = round(np.mean(stats["identities"]), 2)
         mean_aln_length = round(np.mean(stats["alignment_lengths"]), 2)
         forward_proportion = round(
-            stats["forward_reads"] / stats["num_reads"] * 100,
+            stats["forward_reads"] / stats["num_reads"],
             2,
         )
 
@@ -215,8 +215,8 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
     stats = {
         "evenness_value": coverage_evenness(depth_array),
         "mean_depth": int(depth_array.mean()),
-        "1x_coverage": int((depth_array > 0).sum() / len(depth_array) * 100),
-        "10x_coverage": int((depth_array > 9).sum() / len(depth_array) * 100),
+        "coverage_1x": int((depth_array > 0).sum() / len(depth_array) * 100),
+        "coverage_10x": int((depth_array > 9).sum() / len(depth_array) * 100),
         "mapped_reads": int(coverage_stats["numreads"]),
         "mapped_bases": int(
             int(coverage_stats["endpos"]) * float(coverage_stats["meandepth"])
@@ -262,21 +262,21 @@ def run(args):
         sys.stdout,
         delimiter="\t",
         fieldnames=[
-            "reference",
-            "contig_description",
-            "tax_id",
+            "unique_accession",
+            "accession_description",
+            "taxon_id",
             "human_readable",
-            "contig_length",
+            "sequence_length",
             "evenness_value",
             "mean_depth",
-            "1x_coverage",
-            "10x_coverage",
+            "coverage_1x",
+            "coverage_10x",
             "mapped_reads",
             "mapped_bases",
             "mean_read_identity",
             "read_duplication_rate",
             "forward_proportion",
-            "mean_aln_length",
+            "mean_alignment_length",
         ],
     )
     writer.writeheader()
@@ -284,11 +284,13 @@ def run(args):
     for ref in depth_arrays:
         if ref in coverage_info:
             stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
-            stats["reference"] = ref
-            stats["tax_id"] = reference_metadata[ref]["tax_id"]
+            stats["unique_accession"] = ref
+            stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
             stats["human_readable"] = reference_metadata[ref]["human_readable"]
-            stats["contig_description"] = reference_metadata[ref]["seq_description"]
-            stats["contig_length"] = reference_metadata[ref]["sequence_length"]
+            stats["accession_description"] = reference_metadata[ref][
+                "accession_description"
+            ]
+            stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
         else:
             print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
             sys.exit(1)
@@ -296,7 +298,7 @@ def run(args):
         if ref in bam_stats:
             stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
             stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
-            stats["mean_aln_length"] = bam_stats[ref]["mean_aln_length"]
+            stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
             stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
