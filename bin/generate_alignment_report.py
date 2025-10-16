@@ -43,6 +43,7 @@ def generate_bam_stats(bam_file: str) -> dict:
                 "start_end_positions": {},
                 "num_reads": 0,
                 "forward_reads": 0,
+                "unique_mappers": 0,
             },
         )
         stats_dict[ref_name]["num_reads"] += 1
@@ -53,6 +54,9 @@ def generate_bam_stats(bam_file: str) -> dict:
             print("NM tag not found for read, exiting:")
             print(read)
             sys.exit(1)
+
+        if read.mapping_quality >= 60:
+            stats_dict[ref_name]["unique_mappers"] += 1
 
         aln_length = read.query_alignment_length
         identity = ((aln_length - nm_tag) / aln_length) * 100
@@ -94,6 +98,7 @@ def generate_bam_stats(bam_file: str) -> dict:
             "duplication_rate": duplication_rate if duplication_rate > 0 else 0,
             "mean_aln_length": mean_aln_length if mean_aln_length > 0 else 0,
             "forward_proportion": forward_proportion if forward_proportion > 0 else 0,
+            "uniquely_mapped_reads": stats["unique_mappers"],
         }
 
     return out_stats
@@ -272,6 +277,7 @@ def run(args):
             "coverage_1x",
             "coverage_10x",
             "mapped_reads",
+            "uniquely_mapped_reads",
             "mapped_bases",
             "mean_read_identity",
             "read_duplication_rate",
@@ -300,6 +306,7 @@ def run(args):
             stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
             stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
             stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
+            stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
