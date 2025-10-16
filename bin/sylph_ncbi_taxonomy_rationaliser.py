@@ -112,7 +112,7 @@ def run(args: argparse.Namespace):
 
         sylph_taxonomy = []
         for row in tqdm(reader, desc="Pre-processing taxonomy strings"):
-            subbed_taxon_string = re.sub(r"_[A-Za-z]\s", " ", row["taxon_string"])
+            subbed_taxon_string = re.sub(r"_[A-Za-z](?=[\s;])", "", row["taxon_string"])
             sylph_taxonomy.append(
                 {
                     "contig_fname": row["contig_fname"],
