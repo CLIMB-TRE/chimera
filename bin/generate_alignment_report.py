@@ -267,10 +267,10 @@ def run(args):
         sys.stdout,
         delimiter="\t",
         fieldnames=[
-            "unique_accession",
-            "accession_description",
             "taxon_id",
             "human_readable",
+            "unique_accession",
+            "accession_description",
             "sequence_length",
             "evenness_value",
             "mean_depth",
