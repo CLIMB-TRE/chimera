@@ -26,6 +26,7 @@ def generate_bam_stats(bam_file: str) -> dict:
         A dictionary where keys are reference names and values are stats dictionaries.
     """
     stats_dict = {}
+    read_ref_map = {}
 
     bam = pysam.AlignmentFile(bam_file, "rb")
 
@@ -55,8 +56,8 @@ def generate_bam_stats(bam_file: str) -> dict:
             print(read)
             sys.exit(1)
 
-        if read.mapping_quality >= 60:
-            stats_dict[ref_name]["unique_mappers"] += 1
+        read_ref_map.setdefault(read.query_name, set())
+        read_ref_map[read.query_name].add(ref_name)
 
         aln_length = read.query_alignment_length
         identity = ((aln_length - nm_tag) / aln_length) * 100
@@ -74,6 +75,11 @@ def generate_bam_stats(bam_file: str) -> dict:
     bam.close()
 
     out_stats = {}
+
+    for read_name in read_ref_map:
+        if len(read_ref_map[read_name]) == 1:
+            unique_ref = next(iter(read_ref_map[read_name]))
+            stats_dict[unique_ref]["unique_mappers"] += 1
 
     for ref in stats_dict:
         stats = stats_dict[ref]
