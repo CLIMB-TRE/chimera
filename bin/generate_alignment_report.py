@@ -75,9 +75,9 @@ def generate_bam_stats(bam_file: str) -> dict:
 
             stats_dict[ref_name]["identities"].append(identity)
             stats_dict[ref_name]["alignment_lengths"].append(aln_length)
-            stats_dict[ref_name]["read_lengths"].append(len(read.infer_read_length()))
+            stats_dict[ref_name]["read_lengths"].append(read.infer_read_length())
             stats_dict[ref_name]["alignment_proportions"].append(
-                aln_length / len(read.infer_read_length())
+                aln_length / read.infer_read_length()
             )
 
             if not read.is_reverse:
