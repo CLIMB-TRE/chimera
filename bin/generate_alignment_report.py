@@ -119,6 +119,11 @@ def generate_bam_stats(bam_file: str) -> dict:
             "mean_aln_length": mean_aln_length if mean_aln_length > 0 else 0,
             "forward_proportion": forward_proportion if forward_proportion > 0 else 0,
             "uniquely_mapped_reads": stats["unique_mappers"],
+            "primary_alignments": stats["primary_alignments"],
+            "mean_read_length": round(np.mean(stats["read_lengths"]), 2),
+            "mean_alignment_proportion": round(
+                np.mean(stats["alignment_proportions"]), 2
+            ),
         }
 
     return out_stats
@@ -245,16 +250,6 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
         "mapped_reads": int(coverage_stats["numreads"]),
         "mapped_bases": int(
             int(coverage_stats["endpos"]) * float(coverage_stats["meandepth"])
-        ),
-        "mean_read_length": (
-            int(np.mean(coverage_stats["read_lengths"]))
-            if coverage_stats["read_lengths"]
-            else 0
-        ),
-        "mean_alignment_proportion": (
-            float(np.mean(coverage_stats["alignment_proportions"]))
-            if coverage_stats["alignment_proportions"]
-            else 0.0
         ),
     }
 
