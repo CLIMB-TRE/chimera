@@ -41,10 +41,13 @@ def generate_bam_stats(bam_file: str) -> dict:
             {
                 "identities": [],
                 "alignment_lengths": [],
+                "read_lengths": [],
+                "alignment_proportions": [],
                 "start_end_positions": {},
                 "num_reads": 0,
                 "forward_reads": 0,
                 "unique_mappers": 0,
+                "primary_alignments": 0,
             },
         )
         stats_dict[ref_name]["num_reads"] += 1
@@ -66,8 +69,15 @@ def generate_bam_stats(bam_file: str) -> dict:
         stats_dict[ref_name]["start_end_positions"].setdefault(start_end_tuple, 0)
         stats_dict[ref_name]["start_end_positions"][start_end_tuple] += 1
 
+        if not read.is_secondary:
+            stats_dict[ref_name]["primary_alignments"] += 1
+
         stats_dict[ref_name]["identities"].append(identity)
         stats_dict[ref_name]["alignment_lengths"].append(aln_length)
+        stats_dict[ref_name]["read_lengths"].append(read.query_length)
+        stats_dict[ref_name]["alignment_proportions"].append(
+            aln_length / read.query_length
+        )
 
         if not read.is_reverse:
             stats_dict[ref_name]["forward_reads"] += 1
@@ -232,6 +242,16 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
         "mapped_bases": int(
             int(coverage_stats["endpos"]) * float(coverage_stats["meandepth"])
         ),
+        "mean_read_length": (
+            int(np.mean(coverage_stats["read_lengths"]))
+            if coverage_stats["read_lengths"]
+            else 0
+        ),
+        "mean_alignment_proportion": (
+            float(np.mean(coverage_stats["alignment_proportions"]))
+            if coverage_stats["alignment_proportions"]
+            else 0.0
+        ),
     }
 
     return stats
@@ -284,11 +304,14 @@ def run(args):
             "coverage_10x",
             "mapped_reads",
             "uniquely_mapped_reads",
+            "primary_alignments",
             "mapped_bases",
             "mean_read_identity",
             "read_duplication_rate",
             "forward_proportion",
+            "mean_read_length",
             "mean_alignment_length",
+            "mean_alignment_proportion",
         ],
     )
     writer.writeheader()
@@ -313,6 +336,11 @@ def run(args):
             stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
             stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
             stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
+            stats["primary_alignments"] = bam_stats[ref]["primary_alignments"]
+            stats["mean_read_length"] = bam_stats[ref]["mean_read_length"]
+            stats["mean_alignment_proportion"] = bam_stats[ref][
+                "mean_alignment_proportion"
+            ]
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
