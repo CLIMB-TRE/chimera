@@ -59,28 +59,32 @@ def generate_bam_stats(bam_file: str) -> dict:
             print(read)
             sys.exit(1)
 
-        read_ref_map.setdefault(read.query_name, set())
-        read_ref_map[read.query_name].add(ref_name)
+        try:
+            read_ref_map.setdefault(read.query_name, set())
+            read_ref_map[read.query_name].add(ref_name)
 
-        aln_length = read.query_alignment_length
-        identity = ((aln_length - nm_tag) / aln_length) * 100
+            aln_length = read.query_alignment_length
+            identity = ((aln_length - nm_tag) / aln_length) * 100
 
-        start_end_tuple = (read.reference_start, read.reference_end)
-        stats_dict[ref_name]["start_end_positions"].setdefault(start_end_tuple, 0)
-        stats_dict[ref_name]["start_end_positions"][start_end_tuple] += 1
+            start_end_tuple = (read.reference_start, read.reference_end)
+            stats_dict[ref_name]["start_end_positions"].setdefault(start_end_tuple, 0)
+            stats_dict[ref_name]["start_end_positions"][start_end_tuple] += 1
 
-        if not read.is_secondary:
-            stats_dict[ref_name]["primary_alignments"] += 1
+            if not read.is_secondary:
+                stats_dict[ref_name]["primary_alignments"] += 1
 
-        stats_dict[ref_name]["identities"].append(identity)
-        stats_dict[ref_name]["alignment_lengths"].append(aln_length)
-        stats_dict[ref_name]["read_lengths"].append(len(read.query_sequence))
-        stats_dict[ref_name]["alignment_proportions"].append(
-            aln_length / len(read.query_sequence)
-        )
+            stats_dict[ref_name]["identities"].append(identity)
+            stats_dict[ref_name]["alignment_lengths"].append(aln_length)
+            stats_dict[ref_name]["read_lengths"].append(len(read.query_sequence))
+            stats_dict[ref_name]["alignment_proportions"].append(
+                aln_length / len(read.query_sequence)
+            )
 
-        if not read.is_reverse:
-            stats_dict[ref_name]["forward_reads"] += 1
+            if not read.is_reverse:
+                stats_dict[ref_name]["forward_reads"] += 1
+        except Exception as e:
+            print(f"Error processing read:\n{read}\nError: {e}")
+            sys.exit(1)
 
     bam.close()
 
