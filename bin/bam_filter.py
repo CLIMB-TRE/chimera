@@ -35,6 +35,10 @@ def read_checks(
 ) -> bool:
     if isinstance(read, tuple):
         read1, read2 = read
+
+        if read1 is None or read2 is None:
+            return False
+
         if read1.is_unmapped or read2.is_unmapped:
             return False
 
