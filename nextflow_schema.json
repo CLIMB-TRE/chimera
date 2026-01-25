@@ -86,6 +86,14 @@
                     "help_text": "Minimum Average Nucleotide Identity (ANI) for Sylph to output a match.",
                     "minimum": 0,
                     "maximum": 100
+                },
+                "min_alignment_proportion": {
+                    "type": "number",
+                    "description": "Minimum alignment proportion for a read to be kept after filtering.",
+                    "help_text": "The minimum proportion of the read that must be aligned to the reference for the read to be kept after filtering. Value should be between 0 and 1.",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 0.5
                 }
             }
         },
