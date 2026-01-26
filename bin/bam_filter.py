@@ -32,6 +32,7 @@ def read_pair_generator(reads, region_string=None):
 def read_checks(
     read: pysam.AlignedSegment | tuple[pysam.AlignedSegment, pysam.AlignedSegment],
     min_alignment_proportion: float,
+    verbose: bool = False,
 ) -> bool:
     if isinstance(read, tuple):
         read1, read2 = read
@@ -46,10 +47,10 @@ def read_checks(
             return False
 
         aligned_length1 = read1.query_alignment_length
-        total_length1 = read1.query_length
+        total_length1 = read1.infer_read_length()
 
         aligned_length2 = read2.query_alignment_length
-        total_length2 = read2.query_length
+        total_length2 = read2.infer_read_length()
 
         prop1 = 0 if total_length1 == 0 else aligned_length1 / total_length1
         prop2 = 0 if total_length2 == 0 else aligned_length2 / total_length2
@@ -62,13 +63,19 @@ def read_checks(
             return False
 
         aligned_length = read.query_alignment_length
-        total_length = read.query_length
+        total_length = read.infer_read_length()
 
         if (
             total_length == 0
             or (aligned_length / total_length) < min_alignment_proportion
         ):
             return False
+        else:
+            if verbose:
+                print(
+                    f"Keeping read {read.query_name} aligned to {read.reference_name} with alignment proportion {aligned_length / total_length}"
+                )
+                print(f"Aligned length: {aligned_length}, Total length: {total_length}")
 
     return True
 
@@ -84,6 +91,7 @@ def main():
         type=float,
         help="Minimum alignment proportion (how much of the source read is aligned) to retain a read (0-1)",
     )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
 
@@ -99,7 +107,7 @@ def main():
             read_pairs = read_pair_generator(chained_iterator)
 
         for read in read_pairs if first_read.is_paired else chained_iterator:
-            if read_checks(read, args.min_alignment_proportion):
+            if read_checks(read, args.min_alignment_proportion, args.verbose):
                 if first_read.is_paired:
                     out_bam.write(read[0])
                     out_bam.write(read[1])

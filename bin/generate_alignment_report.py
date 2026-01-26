@@ -7,6 +7,32 @@ import sys
 import pysam
 
 
+def generate_alignment_complexity(read: pysam.AlignedSegment) -> float:
+    """
+    Calculate the complexity of an aligned section of a read based on the proportion of consecutive identical bases.
+    e.g. How many bases are the same as the previous base, divided by total bases - 1. AAAGAGA would have a complexity score of 0.285... (2/7).
+
+    Parameters
+    ----------
+    read : pysam.AlignedSegment
+        A pysam AlignedSegment object representing a read.
+
+    Returns
+    -------
+    float
+        Complexity score between 0 and 1, where 1 indicates high complexity and 0 indicates low complexity.
+    """
+
+    seq = read.query_alignment_sequence
+    if not seq or len(seq) < 2:
+        return 0.0  # No sequence or too short to determine complexity
+
+    same_base_count = sum(1 for i in range(1, len(seq)) if seq[i] == seq[i - 1])
+    complexity = 1 - (same_base_count / (len(seq) - 1))
+
+    return complexity
+
+
 def generate_bam_stats(bam_file: str) -> dict:
     """
     Get basic stats for each CHROM from a BAM file, specifically:
@@ -43,6 +69,7 @@ def generate_bam_stats(bam_file: str) -> dict:
                 "alignment_lengths": [],
                 "read_lengths": [],
                 "alignment_proportions": [],
+                "alignment_complexities": [],
                 "start_end_positions": {},
                 "num_reads": 0,
                 "forward_reads": 0,
@@ -75,9 +102,13 @@ def generate_bam_stats(bam_file: str) -> dict:
             stats_dict[ref_name]["alignment_proportions"].append(
                 aln_length / read.infer_read_length()
             )
+            stats_dict[ref_name]["alignment_complexities"].append(
+                generate_alignment_complexity(read)
+            )
 
             if not read.is_reverse:
                 stats_dict[ref_name]["forward_reads"] += 1
+
         except Exception as e:
             print(f"Error processing read:\n{read}\nError: {e}", file=sys.stderr)
             sys.exit(1)
@@ -118,6 +149,9 @@ def generate_bam_stats(bam_file: str) -> dict:
             "mean_read_length": round(np.mean(stats["read_lengths"]), 2),
             "mean_alignment_proportion": round(
                 np.mean(stats["alignment_proportions"]), 2
+            ),
+            "mean_alignment_complexity": round(
+                np.mean(stats["alignment_complexities"]), 2
             ),
         }
 
@@ -305,6 +339,7 @@ def run(args):
             "mean_read_length",
             "mean_alignment_length",
             "mean_alignment_proportion",
+            "mean_alignment_complexity",
         ],
     )
     writer.writeheader()
