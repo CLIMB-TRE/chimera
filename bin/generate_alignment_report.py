@@ -368,6 +368,9 @@ def run(args):
             stats["mean_alignment_proportion"] = bam_stats[ref][
                 "mean_alignment_proportion"
             ]
+            stats["mean_alignment_complexity"] = bam_stats[ref][
+                "mean_alignment_complexity"
+            ]
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
