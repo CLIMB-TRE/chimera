@@ -71,6 +71,24 @@
                     "description": "Path to database metadata.",
                     "help_text": "Path to a pre-built database metadata for the alignment reference database you are using.",
                     "fa_icon": "fas fa-dna"
+                },
+                "alignment_scoring_matrix": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to alignment scoring matrix JSON file.",
+                    "help_text": "Path to a JSON file defining the scoring matrix used to score alignments in the alignment report.",
+                    "fa_icon": "fas fa-dna",
+                    "default": "assets/alignment_scoring_matrix.json"
+                },
+                "alignment_scoring_json_schema": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to alignment scoring JSON schema file.",
+                    "help_text": "Path to a JSON schema file defining the structure of the alignment scoring matrix JSON file.",
+                    "fa_icon": "fas fa-dna",
+                    "default": "assets/alignment_scoring_json_schema.json"
                 }
             }
         },
