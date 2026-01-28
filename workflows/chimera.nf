@@ -97,9 +97,14 @@ workflow CHIMERA {
         .join(SAMTOOLS_COVERAGE.out.coverage, failOnDuplicate: true, failOnMismatch: true)
         .join(SAMTOOLS_SORT_2.out.bam, failOnDuplicate: true, failOnMismatch: true)
 
+    scoring_matrix = file(params.alignment_scoring_matrix, checkIfExists: true)
+    json_schema = file(params.alignment_scoring_json_schema, checkIfExists: true)
+
     ALIGNMENT_REPORT(
         ch_alignment_report_input,
         database_metadata,
+        scoring_matrix,
+        json_schema,
     )
 
 

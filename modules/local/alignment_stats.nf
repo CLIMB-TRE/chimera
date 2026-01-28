@@ -10,6 +10,8 @@ process ALIGNMENT_REPORT {
     input:
     tuple val(meta), path(depth_tsv), path(coverage_tsv), path(bam)
     path database_metadata
+    path scoring_matrix
+    path json_schema
 
     output:
     tuple val(meta), path("*.alignment_report.tsv"), emit: alignment_report
@@ -21,7 +23,9 @@ process ALIGNMENT_REPORT {
         --depth_tsv ${depth_tsv} \\
         --coverage_tsv ${coverage_tsv} \\
         --database_metadata ${database_metadata} \\
-        --bam ${bam} \\
+        --scoring_matrix ${scoring_matrix} \\
+        --json_schema ${json_schema} \\
+        ${bam} \\
         > ${prefix}.alignment_report.tsv
     """
 

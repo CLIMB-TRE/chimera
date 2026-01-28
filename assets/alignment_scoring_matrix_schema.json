@@ -1,0 +1,90 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+        "metrics",
+        "total_score_thresholds"
+    ],
+    "properties": {
+        "metrics": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+                "type": "object",
+                "required": [
+                    "description",
+                    "type",
+                    "bands"
+                ],
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "integer",
+                            "float"
+                        ]
+                    },
+                    "bands": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "min",
+                                "score"
+                            ],
+                            "properties": {
+                                "min": {
+                                    "type": "number"
+                                },
+                                "max": {
+                                    "type": [
+                                        "number",
+                                        "null"
+                                    ]
+                                },
+                                "score": {
+                                    "type": "number"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "total_score_thresholds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "min",
+                    "label"
+                ],
+                "properties": {
+                    "min": {
+                        "type": "number"
+                    },
+                    "max": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "label": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        }
+    },
+    "additionalProperties": false
+}

@@ -5,6 +5,8 @@ import math
 import csv
 import sys
 import pysam
+import json
+import jsonschema
 
 
 def generate_alignment_complexity(read: pysam.AlignedSegment) -> float:
@@ -309,6 +311,98 @@ def reference_metadata_parser(database_metadata: str) -> dict:
     return metadata_dict
 
 
+def validate_scoring_matrix(scoring_matrix_path: str, json_schema_path: str) -> dict:
+    """Validate the scoring matrix against a JSON schema and check range continuity.
+
+    Args:
+        scoring_matrix_path (str): path to the scoring matrix file
+        json_schema_path (str): path to the JSON schema file
+
+    Raises:
+        jsonschema.ValidationError: If the scoring matrix does not conform to the JSON schema
+        jsonschema.SchemaError: If the JSON schema itself is invalid
+        ValueError: If any range has min >= max
+        ValueError: If ranges are not contiguous
+        ValueError: If an open-ended range is not the last one
+    Returns:
+        dict: The validated scoring matrix
+    """
+
+    with open(json_schema_path, "r") as schema_file:
+        schema = json.load(schema_file)
+
+    with open(scoring_matrix_path, "r") as matrix_file:
+        scoring_matrix = json.load(matrix_file)
+
+    jsonschema.validate(instance=scoring_matrix, schema=schema)
+
+    for metric, details in scoring_matrix["metrics"].items():
+
+        for i, r in enumerate(details["bands"]):
+            if r["max"] is not None and r["min"] >= r["max"]:
+                raise ValueError(f"{metric}: min must be < max")
+
+            if i > 0:
+                prev = details["bands"][i - 1]
+                if prev["max"] != r["min"]:
+                    raise ValueError(f"{metric}: ranges must be contiguous")
+
+            if r["max"] is None and i != len(details["bands"]) - 1:
+                raise ValueError(f"{metric}: open-ended range must be last")
+
+    for i, r in enumerate(scoring_matrix["total_score_thresholds"]):
+        if r["max"] is not None and r["min"] >= r["max"]:
+            raise ValueError(f"Score category {r['label']}: min must be < max")
+
+        if i > 0:
+            prev = scoring_matrix["total_score_thresholds"][i - 1]
+            if prev["max"] != r["min"]:
+                raise ValueError(
+                    f"Score category {r['label']}: ranges must be contiguous"
+                )
+
+        if r["max"] is None and i != len(scoring_matrix["total_score_thresholds"]) - 1:
+            raise ValueError(
+                f"Score category {r['label']}: open-ended range must be last"
+            )
+
+    return scoring_matrix
+
+
+def score_record(record: dict, scoring_matrix: dict) -> int:
+    total_score = 0
+
+    for metric, details in scoring_matrix["metrics"].items():
+        value = record.get(metric)
+        if value is None:
+            continue
+
+        for band in details["bands"]:
+            if band["max"] is None:
+                if float(value) >= band["min"]:
+                    total_score += band["score"]
+                    break
+            else:
+                if band["min"] <= float(value) < band["max"]:
+                    total_score += band["score"]
+                    break
+
+    return total_score
+
+
+def total_score_category(record: dict, scoring_matrix: dict) -> str:
+    score = score_record(record, scoring_matrix)
+
+    thresholds = scoring_matrix["total_score_thresholds"]
+    for category in thresholds:
+        if category["max"] is None:
+            if float(score) >= category["min"]:
+                return category["label"]
+        else:
+            if category["min"] <= float(score) < category["max"]:
+                return category["label"]
+
+
 def run(args):
 
     depth_arrays = depth_tsv_to_np_arrays(args.depth_tsv)
@@ -316,33 +410,7 @@ def run(args):
     reference_metadata = reference_metadata_parser(args.database_metadata)
     bam_stats = generate_bam_stats(args.bam)
 
-    # Print report
-    writer = csv.DictWriter(
-        sys.stdout,
-        delimiter="\t",
-        fieldnames=[
-            "taxon_id",
-            "human_readable",
-            "unique_accession",
-            "accession_description",
-            "sequence_length",
-            "evenness_value",
-            "mean_depth",
-            "coverage_1x",
-            "coverage_10x",
-            "mapped_reads",
-            "uniquely_mapped_reads",
-            "mapped_bases",
-            "mean_read_identity",
-            "read_duplication_rate",
-            "forward_proportion",
-            "mean_read_length",
-            "mean_alignment_length",
-            "mean_alignment_proportion",
-            "mean_alignment_complexity",
-        ],
-    )
-    writer.writeheader()
+    ref_stat_rows = []
 
     for ref in depth_arrays:
         if ref in coverage_info:
@@ -374,8 +442,84 @@ def run(args):
         else:
             print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
+        ref_stat_rows.append(stats)
 
-        writer.writerow(stats)
+    if not args.scoring_matrix:
+        writer = csv.DictWriter(
+            sys.stdout,
+            delimiter="\t",
+            fieldnames=[
+                "taxon_id",
+                "human_readable",
+                "unique_accession",
+                "accession_description",
+                "sequence_length",
+                "evenness_value",
+                "mean_depth",
+                "coverage_1x",
+                "coverage_10x",
+                "mapped_reads",
+                "uniquely_mapped_reads",
+                "mapped_bases",
+                "mean_read_identity",
+                "read_duplication_rate",
+                "forward_proportion",
+                "mean_read_length",
+                "mean_alignment_length",
+                "mean_alignment_proportion",
+                "mean_alignment_complexity",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(ref_stat_rows)
+        return
+
+    if args.json_schema:
+        scoring_matrix = validate_scoring_matrix(args.scoring_matrix, args.json_schema)
+    else:
+        print(
+            "WARNING: No JSON schema provided so skipping scoring matrix validation. This may break scoring!",
+            file=sys.stderr,
+        )
+        scoring_matrix = json.load(open(args.scoring_matrix, "r"))
+
+    writer = csv.DictWriter(
+        sys.stdout,
+        delimiter="\t",
+        fieldnames=[
+            "taxon_id",
+            "human_readable",
+            "unique_accession",
+            "accession_description",
+            "sequence_length",
+            "evenness_value",
+            "mean_depth",
+            "coverage_1x",
+            "coverage_10x",
+            "mapped_reads",
+            "uniquely_mapped_reads",
+            "mapped_bases",
+            "mean_read_identity",
+            "read_duplication_rate",
+            "forward_proportion",
+            "mean_read_length",
+            "mean_alignment_length",
+            "mean_alignment_proportion",
+            "mean_alignment_complexity",
+            "total_score",
+            "confidence",
+        ],
+    )
+    writer.writeheader()
+
+    for row in ref_stat_rows:
+        total_score = score_record(row, scoring_matrix)
+        score_category = total_score_category(row, scoring_matrix)
+
+        row["total_score"] = total_score
+        row["confidence"] = score_category
+
+        writer.writerow(row)
 
 
 def main():
@@ -402,7 +546,18 @@ def main():
         required=True,
         help="Path to the database metadata TSV file, containing reference taxonomy etc.",
     )
-    parser.add_argument("--bam", type=str, required=True, help="Path to the BAM file.")
+    parser.add_argument(
+        "--scoring_matrix",
+        type=str,
+        help="Path to the scoring matrix file.",
+    )
+    parser.add_argument(
+        "--json_schema",
+        type=str,
+        help="Path to the JSON schema file for validating the scoring matrix.",
+    )
+
+    parser.add_argument("bam", type=str, help="Path to the BAM file.")
     args = parser.parse_args()
 
     run(args)
