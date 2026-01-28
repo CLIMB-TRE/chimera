@@ -78,8 +78,7 @@
                     "exists": true,
                     "description": "Path to alignment scoring matrix JSON file.",
                     "help_text": "Path to a JSON file defining the scoring matrix used to score alignments in the alignment report.",
-                    "fa_icon": "fas fa-dna",
-                    "default": "assets/alignment_scoring_matrix.json"
+                    "fa_icon": "fas fa-dna"
                 },
                 "alignment_scoring_json_schema": {
                     "type": "string",
@@ -87,8 +86,7 @@
                     "exists": true,
                     "description": "Path to alignment scoring JSON schema file.",
                     "help_text": "Path to a JSON schema file defining the structure of the alignment scoring matrix JSON file.",
-                    "fa_icon": "fas fa-dna",
-                    "default": "assets/alignment_scoring_json_schema.json"
+                    "fa_icon": "fas fa-dna"
                 }
             }
         },
