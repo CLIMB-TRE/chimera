@@ -519,7 +519,13 @@ def run(args):
         row["total_score"] = total_score
         row["confidence"] = score_category
 
-        writer.writerow(row)
+    sorted_rows = sorted(
+        ref_stat_rows,
+        key=lambda x: x["total_score"],
+        reverse=True,
+    )
+
+    writer.writerows(sorted_rows)
 
 
 def main():
