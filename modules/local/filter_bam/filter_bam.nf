@@ -4,8 +4,8 @@ process FILTER_BAM {
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'oras://community.wave.seqera.io/library/pip_numpy_pysam:410caf1b9aff14b8'
-        : 'community.wave.seqera.io/library/pip_numpy_pysam:b0f6802385070dc7'}"
+        ? 'oras://community.wave.seqera.io/library/pysam_jsonschema_numpy:0d4beb5f588f4b4d'
+        : 'community.wave.seqera.io/library/pysam_jsonschema_numpy:8ec3d505e678a720'}"
 
     input:
     tuple val(meta), path(bam)

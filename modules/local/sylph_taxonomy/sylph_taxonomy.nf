@@ -4,8 +4,8 @@ process SYLPH_TAXONOMY {
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'oras://community.wave.seqera.io/library/python:3.12.11--522e8c4b3908f5d9'
-        : 'community.wave.seqera.io/library/python:3.12.11--13982997ea033b24'}"
+        ? 'oras://community.wave.seqera.io/library/pysam_jsonschema_numpy:0d4beb5f588f4b4d'
+        : 'community.wave.seqera.io/library/pysam_jsonschema_numpy:8ec3d505e678a720'}"
 
     input:
     tuple val(meta), path(sylph_profile)

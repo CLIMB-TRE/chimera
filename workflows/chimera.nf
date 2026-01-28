@@ -16,9 +16,9 @@ include { SAMTOOLS_INDEX                   } from '../modules/nf-core/samtools/i
 include { SAMTOOLS_DEPTH                   } from '../modules/nf-core/samtools/depth/main'
 include { SAMTOOLS_COVERAGE                } from '../modules/nf-core/samtools/coverage/main'
 
-include { SYLPH_TAXONOMY                   } from '../modules/local/sylph_taxonomy'
-include { ALIGNMENT_REPORT                 } from '../modules/local/alignment_stats'
-include { FILTER_BAM                       } from '../modules/local/filter_bam'
+include { SYLPH_TAXONOMY                   } from '../modules/local/sylph_taxonomy/sylph_taxonomy'
+include { ALIGNMENT_REPORT                 } from '../modules/local/alignment_report/alignment_report'
+include { FILTER_BAM                       } from '../modules/local/filter_bam/filter_bam'
 
 
 /*
