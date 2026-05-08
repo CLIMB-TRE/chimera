@@ -8,7 +8,7 @@ process ALIGNMENT_REPORT {
         : 'community.wave.seqera.io/library/pysam_jsonschema_numpy:8ec3d505e678a720'}"
 
     input:
-    tuple val(meta), path(depth_tsv), path(coverage_tsv), path(bam)
+    tuple val(meta), path(depth_tsv), path(bam)
     path database_metadata
     path scoring_matrix
     path json_schema
@@ -21,7 +21,6 @@ process ALIGNMENT_REPORT {
     """
     generate_alignment_report.py \\
         --depth_tsv ${depth_tsv} \\
-        --coverage_tsv ${coverage_tsv} \\
         --database_metadata ${database_metadata} \\
         --scoring_matrix ${scoring_matrix} \\
         --json_schema ${json_schema} \\

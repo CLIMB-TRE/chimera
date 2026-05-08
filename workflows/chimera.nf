@@ -10,11 +10,9 @@ include { methodsDescriptionText           } from '../subworkflows/local/utils_n
 include { BWAMEM2_MEM                      } from '../modules/nf-core/bwamem2/mem/main'
 include { MINIMAP2_ALIGN                   } from '../modules/nf-core/minimap2/align/main'
 include { SYLPH_PROFILE                    } from '../modules/nf-core/sylph/profile/main'
-include { SAMTOOLS_SORT as SAMTOOLS_SORT_1 } from '../modules/nf-core/samtools/sort/main'
-include { SAMTOOLS_SORT as SAMTOOLS_SORT_2 } from '../modules/nf-core/samtools/sort/main'
-include { SAMTOOLS_INDEX                   } from '../modules/nf-core/samtools/index/main'
-include { SAMTOOLS_DEPTH                   } from '../modules/nf-core/samtools/depth/main'
-include { SAMTOOLS_COVERAGE                } from '../modules/nf-core/samtools/coverage/main'
+include { SAMTOOLS_SORT  as SAMTOOLS_SORT_2 } from '../modules/nf-core/samtools/sort/main'
+include { SAMTOOLS_INDEX                    } from '../modules/nf-core/samtools/index/main'
+include { SAMTOOLS_DEPTH                    } from '../modules/nf-core/samtools/depth/main'
 
 include { SYLPH_TAXONOMY                   } from '../modules/local/sylph_taxonomy/sylph_taxonomy'
 include { ALIGNMENT_REPORT                 } from '../modules/local/alignment_report/alignment_report'
@@ -60,33 +58,35 @@ workflow CHIMERA {
     MINIMAP2_ALIGN(ch_samplesheet_branched.ont, [[:], mm2_index], true, "bai", false, false)
     ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions.first())
 
-    SAMTOOLS_SORT_1(MINIMAP2_ALIGN.out.bam, [[:], []], "bai")
-    ch_versions = ch_versions.mix(SAMTOOLS_SORT_1.out.versions.first())
-
     BWAMEM2_MEM(ch_samplesheet_branched.illumina, [[:], bwa_index], [[:], []], true)
     ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions.first())
 
-    ch_bams = SAMTOOLS_SORT_1.out.bam.mix(BWAMEM2_MEM.out.bam)
+    // MINIMAP2_ALIGN already emits coordinate-sorted+indexed BAM; BWAMEM2_MEM emits sorted BAM
+    FILTER_BAM(MINIMAP2_ALIGN.out.bam.mix(BWAMEM2_MEM.out.bam))
 
-    FILTER_BAM(ch_bams)
+    // ONT: filter preserves coordinate order for single-end reads — only indexing needed
+    // Illumina: pair-grouping in FILTER_BAM disrupts coordinate order — must re-sort
+    ch_filtered_branched = FILTER_BAM.out.filtered_bam.branch { meta, _bam ->
+        ont:      meta.platform == "ont"
+        illumina: meta.platform == "illumina" || meta.platform == "illumina.se"
+    }
 
-    SAMTOOLS_SORT_2(FILTER_BAM.out.filtered_bam, [[:], []], "bai")
-    ch_versions = ch_versions.mix(SAMTOOLS_SORT_2.out.versions.first())
-
-    SAMTOOLS_DEPTH(SAMTOOLS_SORT_2.out.bam, [[:], []])
-    ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.out.versions.first())
-
-    SAMTOOLS_INDEX(SAMTOOLS_SORT_2.out.bam)
+    SAMTOOLS_INDEX(ch_filtered_branched.ont)
     ch_versions = ch_versions.mix(SAMTOOLS_INDEX.out.versions.first())
 
-    ch_bams_sorted_indexed = SAMTOOLS_SORT_2.out.bam.join(
-        SAMTOOLS_SORT_2.out.bai,
-        failOnDuplicate: true,
-        failOnMismatch: true,
-    )
+    SAMTOOLS_SORT_2(ch_filtered_branched.illumina, [[:], []], "bai")
+    ch_versions = ch_versions.mix(SAMTOOLS_SORT_2.out.versions.first())
 
-    SAMTOOLS_COVERAGE(ch_bams_sorted_indexed, [[:], []], [[:], []])
-    ch_versions = ch_versions.mix(SAMTOOLS_COVERAGE.out.versions.first())
+    ch_ont_bam_bai = ch_filtered_branched.ont
+        .join(SAMTOOLS_INDEX.out.bai, failOnDuplicate: true, failOnMismatch: true)
+    ch_illumina_bam_bai = SAMTOOLS_SORT_2.out.bam
+        .join(SAMTOOLS_SORT_2.out.bai, failOnDuplicate: true, failOnMismatch: true)
+
+    SAMTOOLS_DEPTH(
+        ch_ont_bam_bai.mix(ch_illumina_bam_bai),
+        [[:], []]
+    )
+    ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.out.versions.first())
 
     SYLPH_TAXONOMY(
         SYLPH_PROFILE.out.profile_out,
@@ -94,8 +94,11 @@ workflow CHIMERA {
     )
 
     ch_alignment_report_input = SAMTOOLS_DEPTH.out.tsv
-        .join(SAMTOOLS_COVERAGE.out.coverage, failOnDuplicate: true, failOnMismatch: true)
-        .join(SAMTOOLS_SORT_2.out.bam, failOnDuplicate: true, failOnMismatch: true)
+        .join(
+            ch_filtered_branched.ont.mix(SAMTOOLS_SORT_2.out.bam),
+            failOnDuplicate: true,
+            failOnMismatch: true,
+        )
 
     scoring_matrix = file(params.alignment_scoring_matrix, checkIfExists: true)
     json_schema = file(params.alignment_scoring_json_schema, checkIfExists: true)

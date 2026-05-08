@@ -143,6 +143,7 @@ def generate_bam_stats(bam_file: str) -> dict:
         )
 
         out_stats[ref] = {
+            "num_reads": stats["num_reads"],
             "mean_identity": mean_identity if mean_identity > 0 else 0,
             "duplication_rate": duplication_rate if duplication_rate > 0 else 0,
             "mean_aln_length": mean_aln_length if mean_aln_length > 0 else 0,
@@ -240,35 +241,13 @@ def depth_tsv_to_np_arrays(depth_tsv: str) -> dict:
     return depth_arrays
 
 
-def coverage_tsv_parser(depth_tsv: str) -> dict:
-    """
-    Parse a depth TSV file and return a dictionary with coverage information.
 
-    Parameters
-    ----------
-    depth_tsv : str
-        Path to the depth TSV file.
-
-    Returns
-    -------
-    list
-        A list of dictionaries, each containing coverage information for a specific region.
-    """
-    coverage_dict = {}
-
-    with open(depth_tsv, "r") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            coverage_dict[row["#rname"]] = row
-
-    return coverage_dict
-
-
-def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
+def alignment_stats(depth_array: np.ndarray, num_reads: int) -> dict:
     """Generate some basic stats from a depth array, including coverage evenness (E), mean depth, breadth at 1x and 10x, mapped reads, mapped bases.
 
     Args:
         depth_array (np.ndarray): Array of per-base coverage values.
+        num_reads (int): Number of mapped reads for this reference.
 
     Returns:
         dict: A dictionary containing the computed alignment statistics.
@@ -278,10 +257,8 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
         "mean_depth": int(depth_array.mean()),
         "coverage_1x": int((depth_array > 0).sum() / len(depth_array) * 100),
         "coverage_10x": int((depth_array > 9).sum() / len(depth_array) * 100),
-        "mapped_reads": int(coverage_stats["numreads"]),
-        "mapped_bases": int(
-            int(coverage_stats["endpos"]) * float(coverage_stats["meandepth"])
-        ),
+        "mapped_reads": num_reads,
+        "mapped_bases": int(depth_array.sum()),
     }
 
     return stats
@@ -406,42 +383,30 @@ def total_score_category(record: dict, scoring_matrix: dict) -> str:
 def run(args):
 
     depth_arrays = depth_tsv_to_np_arrays(args.depth_tsv)
-    coverage_info = coverage_tsv_parser(args.coverage_tsv)
     reference_metadata = reference_metadata_parser(args.database_metadata)
     bam_stats = generate_bam_stats(args.bam)
 
     ref_stat_rows = []
 
     for ref in depth_arrays:
-        if ref in coverage_info:
-            stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
-            stats["unique_accession"] = ref
-            stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
-            stats["human_readable"] = reference_metadata[ref]["human_readable"]
-            stats["accession_description"] = reference_metadata[ref][
-                "accession_description"
-            ]
-            stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
-        else:
-            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
+        if ref not in bam_stats:
+            print(f"ERROR: Reference {ref} found in depth TSV but not in BAM stats.")
             sys.exit(1)
 
-        if ref in bam_stats:
-            stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
-            stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
-            stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
-            stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
-            stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
-            stats["mean_read_length"] = bam_stats[ref]["mean_read_length"]
-            stats["mean_alignment_proportion"] = bam_stats[ref][
-                "mean_alignment_proportion"
-            ]
-            stats["mean_alignment_complexity"] = bam_stats[ref][
-                "mean_alignment_complexity"
-            ]
-        else:
-            print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
-            sys.exit(1)
+        stats = alignment_stats(depth_arrays[ref], bam_stats[ref]["num_reads"])
+        stats["unique_accession"] = ref
+        stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
+        stats["human_readable"] = reference_metadata[ref]["human_readable"]
+        stats["accession_description"] = reference_metadata[ref]["accession_description"]
+        stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
+        stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
+        stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
+        stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
+        stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
+        stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
+        stats["mean_read_length"] = bam_stats[ref]["mean_read_length"]
+        stats["mean_alignment_proportion"] = bam_stats[ref]["mean_alignment_proportion"]
+        stats["mean_alignment_complexity"] = bam_stats[ref]["mean_alignment_complexity"]
         ref_stat_rows.append(stats)
 
     if not args.scoring_matrix:
@@ -539,12 +504,6 @@ def main():
         type=str,
         required=True,
         help="Path to the depth TSV file, generated by samtools depth -a.",
-    )
-    parser.add_argument(
-        "--coverage_tsv",
-        type=str,
-        required=True,
-        help="Path to the coverage TSV file, generated by samtools coverage.",
     )
     parser.add_argument(
         "--database_metadata",
