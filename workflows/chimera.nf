@@ -10,7 +10,7 @@ include { methodsDescriptionText           } from '../subworkflows/local/utils_n
 include { BWAMEM2_MEM                      } from '../modules/nf-core/bwamem2/mem/main'
 include { MINIMAP2_ALIGN                   } from '../modules/nf-core/minimap2/align/main'
 include { SYLPH_PROFILE                    } from '../modules/nf-core/sylph/profile/main'
-include { SAMTOOLS_SORT  as SAMTOOLS_SORT_2 } from '../modules/nf-core/samtools/sort/main'
+include { SAMTOOLS_SORT                     } from '../modules/nf-core/samtools/sort/main'
 include { SAMTOOLS_INDEX                    } from '../modules/nf-core/samtools/index/main'
 include { SAMTOOLS_DEPTH                    } from '../modules/nf-core/samtools/depth/main'
 
@@ -74,13 +74,13 @@ workflow CHIMERA {
     SAMTOOLS_INDEX(ch_filtered_branched.ont)
     ch_versions = ch_versions.mix(SAMTOOLS_INDEX.out.versions.first())
 
-    SAMTOOLS_SORT_2(ch_filtered_branched.illumina, [[:], []], "bai")
-    ch_versions = ch_versions.mix(SAMTOOLS_SORT_2.out.versions.first())
+    SAMTOOLS_SORT(ch_filtered_branched.illumina, [[:], []], "bai")
+    ch_versions = ch_versions.mix(SAMTOOLS_SORT.out.versions.first())
 
     ch_ont_bam_bai = ch_filtered_branched.ont
         .join(SAMTOOLS_INDEX.out.bai, failOnDuplicate: true, failOnMismatch: true)
-    ch_illumina_bam_bai = SAMTOOLS_SORT_2.out.bam
-        .join(SAMTOOLS_SORT_2.out.bai, failOnDuplicate: true, failOnMismatch: true)
+    ch_illumina_bam_bai = SAMTOOLS_SORT.out.bam
+        .join(SAMTOOLS_SORT.out.bai, failOnDuplicate: true, failOnMismatch: true)
 
     SAMTOOLS_DEPTH(
         ch_ont_bam_bai.mix(ch_illumina_bam_bai),
@@ -95,7 +95,7 @@ workflow CHIMERA {
 
     ch_alignment_report_input = SAMTOOLS_DEPTH.out.tsv
         .join(
-            ch_filtered_branched.ont.mix(SAMTOOLS_SORT_2.out.bam),
+            ch_filtered_branched.ont.mix(SAMTOOLS_SORT.out.bam),
             failOnDuplicate: true,
             failOnMismatch: true,
         )
