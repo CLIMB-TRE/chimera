@@ -88,10 +88,18 @@ def generate_bam_stats(bam_file: str) -> dict:
             sys.exit(1)
 
         try:
+            aln_length = read.query_alignment_length
+            if aln_length == 0:
+                print(
+                    f"Skipping read {read.query_name} with zero-length alignment (no SEQ present)",
+                    file=sys.stderr,
+                )
+                stats_dict[ref_name]["num_reads"] -= 1
+                continue
+
             read_ref_map.setdefault(read.query_name, set())
             read_ref_map[read.query_name].add(ref_name)
 
-            aln_length = read.query_alignment_length
             identity = ((aln_length - nm_tag) / aln_length) * 100
 
             start_end_tuple = (read.reference_start, read.reference_end)

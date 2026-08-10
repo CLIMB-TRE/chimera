@@ -103,10 +103,16 @@
                     "minimum": 0,
                     "maximum": 100
                 },
+                "min_alignment_proportion_filter": {
+                    "type": "boolean",
+                    "description": "Enable filtering of reads by minimum alignment proportion.",
+                    "help_text": "When enabled, reads are filtered by 'min_alignment_proportion' before downstream processing. When disabled, 'min_alignment_proportion' is ignored and no reads are removed on this basis.",
+                    "default": false
+                },
                 "min_alignment_proportion": {
                     "type": "number",
                     "description": "Minimum alignment proportion for a read to be kept after filtering.",
-                    "help_text": "The minimum proportion of the read that must be aligned to the reference for the read to be kept after filtering. Value should be between 0 and 1.",
+                    "help_text": "The minimum proportion of the read that must be aligned to the reference for the read to be kept after filtering. Value should be between 0 and 1. Only used when 'min_alignment_proportion_filter' is enabled.",
                     "minimum": 0.0,
                     "maximum": 1.0,
                     "default": 0.5

@@ -1,4 +1,4 @@
-process FILTER_BAM {
+process FILL_SECONDARY_SEQ {
     tag "${meta.id}"
     label 'process_single'
 
@@ -11,23 +11,19 @@ process FILTER_BAM {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("*.filtered.bam"), emit: filtered_bam
-
-    when:
-    task.ext.when == null || task.ext.when
+    tuple val(meta), path("*.secondary_filled.bam"), emit: bam
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    bam_filter.py \\
-        --min_alignment_proportion ${params.min_alignment_proportion} \\
+    fill_secondary_seq.py \\
         ${bam} \\
-        ${prefix}.filtered.bam
+        ${prefix}.secondary_filled.bam
     """
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch ${prefix}.filtered.bam
+    touch ${prefix}.secondary_filled.bam
     """
 }
