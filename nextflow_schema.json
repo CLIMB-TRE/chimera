@@ -53,7 +53,7 @@
                     "format": "file-path",
                     "exists": true,
                     "description": "Path to sylph database.",
-                    "help_text": "Path to a pre-built sylph database for the reference database you are using.",
+                    "help_text": "Path to a pre-built sylph database for the reference database you are using. Not required when 'skip_sylph' is enabled.",
                     "fa_icon": "fas fa-dna"
                 },
                 "sylph_taxdb": {
@@ -61,7 +61,7 @@
                     "format": "file-path",
                     "exists": true,
                     "description": "Path to sylph taxonomy database.",
-                    "help_text": "Path to a pre-built sylph taxonomy database for the reference database you are using.",
+                    "help_text": "Path to a pre-built sylph taxonomy database for the reference database you are using. Not required when 'skip_sylph' is enabled.",
                     "fa_icon": "fas fa-dna"
                 },
                 "database_metadata": {
@@ -102,6 +102,12 @@
                     "help_text": "Minimum Average Nucleotide Identity (ANI) for Sylph to output a match.",
                     "minimum": 0,
                     "maximum": 100
+                },
+                "skip_sylph": {
+                    "type": "boolean",
+                    "description": "Skip sylph taxonomic profiling and taxonomy reporting entirely.",
+                    "help_text": "When enabled, the pipeline does not run sylph profiling or produce a sylph taxonomy report, and 'sylph_db'/'sylph_taxdb' are not required.",
+                    "default": false
                 },
                 "min_alignment_proportion_filter": {
                     "type": "boolean",

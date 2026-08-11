@@ -64,6 +64,8 @@ Unlike pipelines that build their own reference index, CLIMB-TRE/chimera expects
 
 All reference genomes referenced by `--bwa_index_prefix`/`--mm2_index` should be the same set as those sketched into `--sylph_db`, keyed by the same accessions used in `--sylph_taxdb` and `--database_metadata`, so that results can be joined across the sylph and alignment arms of the pipeline.
 
+If you only need the alignment report and have no need for taxonomic profiling (or don't have a sylph database/taxdb built yet), set `--skip_sylph` to `true`. This skips sylph profiling and the sylph taxonomy report entirely, and `--sylph_db`/`--sylph_taxdb` are not required in that case.
+
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:

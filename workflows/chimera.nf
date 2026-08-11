@@ -37,18 +37,26 @@ workflow CHIMERA {
     mm2_index = file(params.mm2_index, checkIfExists: true)
     bwa_index = file("${params.bwa_index_prefix}*")
     database_metadata = file(params.database_metadata, checkIfExists: true)
-    sylph_db = file(params.sylph_db, checkIfExists: true)
-    sylph_taxdb = file(params.sylph_taxdb, checkIfExists: true)
 
     //
-    // Run slyph and alignments to reference db
+    // Run sylph profiling and taxonomy reporting, unless skipped
     //
 
-    SYLPH_PROFILE(
-        ch_samplesheet,
-        sylph_db,
-    )
-    ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions.first())
+    if (!params.skip_sylph) {
+        sylph_db = file(params.sylph_db, checkIfExists: true)
+        sylph_taxdb = file(params.sylph_taxdb, checkIfExists: true)
+
+        SYLPH_PROFILE(
+            ch_samplesheet,
+            sylph_db,
+        )
+        ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions.first())
+
+        SYLPH_TAXONOMY(
+            SYLPH_PROFILE.out.profile_out,
+            sylph_taxdb,
+        )
+    }
 
     // Run the appropriate aligner based on platform
     ch_samplesheet_branched = ch_samplesheet.branch { meta, _fastq ->
@@ -100,11 +108,6 @@ workflow CHIMERA {
         [[:], []]
     )
     ch_versions = ch_versions.mix(SAMTOOLS_DEPTH.out.versions.first())
-
-    SYLPH_TAXONOMY(
-        SYLPH_PROFILE.out.profile_out,
-        sylph_taxdb,
-    )
 
     ch_alignment_report_input = SAMTOOLS_DEPTH.out.tsv
         .join(
