@@ -95,7 +95,7 @@ For every reference genome a sample's reads aligned to, this report combines:
 - Alignment-quality metrics computed directly from the BAM: mean read identity (from the `NM` tag), read duplication rate (reads sharing a start/end position), mean alignment length/proportion, forward-strand proportion, and alignment complexity (a measure of how repetitive the aligned sequence is).
 - Reference metadata from `--database_metadata`: taxon ID, human-readable name, accession description and sequence length.
 
-If a scoring matrix (`--alignment_scoring_matrix`, defaulting to [`assets/alignment_scoring_matrix.json`](../assets/alignment_scoring_matrix.json)) is supplied, each metric is scored against a set of configurable bands, summed into a `total_score`, and mapped to a `confidence` category (`fail`, `low_confidence`, `medium_confidence` or `high_confidence` by default) — intended to help distinguish well-supported reference hits from low-confidence or spurious ones. Rows are sorted by descending `total_score`.
+If a scoring matrix (`--alignment_scoring_matrix`, defaulting to [`assets/alignment_scoring_matrix.json`](../assets/alignment_scoring_matrix.json)) is supplied, each metric is scored against a set of configurable bands, summed into a `total_score`, and mapped to a `confidence` category (`fail`, `low`, `medium` or `high` by default) — intended to help distinguish well-supported reference hits from low-confidence or spurious ones. Rows are sorted by descending `total_score`.
 
 ### Pipeline information
 

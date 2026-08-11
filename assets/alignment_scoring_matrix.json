@@ -252,17 +252,17 @@
         {
             "min": 5,
             "max": 8,
-            "label": "low_confidence"
+            "label": "low"
         },
         {
             "min": 8,
             "max": 11,
-            "label": "medium_confidence"
+            "label": "medium"
         },
         {
             "min": 11,
             "max": null,
-            "label": "high_confidence"
+            "label": "high"
         }
     ]
 }
