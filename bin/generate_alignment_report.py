@@ -406,6 +406,7 @@ def run(args):
         stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
         stats["human_readable"] = reference_metadata[ref]["human_readable"]
         stats["accession_description"] = reference_metadata[ref]["accession_description"]
+        stats["segment"] = reference_metadata[ref].get("segment", "")
         stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
         stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
         stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
@@ -417,6 +418,14 @@ def run(args):
         stats["mean_alignment_complexity"] = bam_stats[ref]["mean_alignment_complexity"]
         ref_stat_rows.append(stats)
 
+    # Only expose the 'segment' column (added by newer database_metadata formats,
+    # e.g. for multi-segment viral genomes) when at least one reference has a value.
+    has_segment = any(row.get("segment") for row in ref_stat_rows)
+    if not has_segment:
+        for row in ref_stat_rows:
+            row.pop("segment", None)
+    segment_fieldname = ["segment"] if has_segment else []
+
     if not args.scoring_matrix:
         writer = csv.DictWriter(
             sys.stdout,
@@ -426,6 +435,7 @@ def run(args):
                 "human_readable",
                 "unique_accession",
                 "accession_description",
+                *segment_fieldname,
                 "sequence_length",
                 "evenness_value",
                 "mean_depth",
@@ -464,6 +474,7 @@ def run(args):
             "human_readable",
             "unique_accession",
             "accession_description",
+            *segment_fieldname,
             "sequence_length",
             "evenness_value",
             "mean_depth",
