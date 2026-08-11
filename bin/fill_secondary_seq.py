@@ -2,14 +2,25 @@
 
 import argparse
 import re
+import sys
 import pysam
 
 XA_RE = re.compile(r"([^,]+),([+-])(\d+),([^,]+),(\d+)")
+CIGAR_OP_RE = re.compile(r"(\d+)([MIDNSHP=X])")
+QUERY_CONSUMING_OPS = set("MIS=X")
 
 
 def reverse_complement(seq: str) -> str:
     complement = str.maketrans("ACGTNacgtn", "TGCANtgcan")
     return seq.translate(complement)[::-1]
+
+
+def cigar_query_length(cigar: str) -> int:
+    """Sum of CIGAR operations that consume query bases (M/I/S/=/X), i.e. the
+    read length implied by the CIGAR, excluding hard-clipped (H) bases."""
+    return sum(
+        int(length) for length, op in CIGAR_OP_RE.findall(cigar) if op in QUERY_CONSUMING_OPS
+    )
 
 
 def parse_xa_tag(xa: str) -> list[tuple[str, str, int, str, int]]:
@@ -37,6 +48,16 @@ def make_secondary_from_xa(
 ) -> pysam.AlignedSegment | None:
     reference_id = header.get_tid(ref_name)
     if reference_id == -1:
+        return None
+
+    if primary.query_sequence is None or cigar_query_length(cigar) != len(
+        primary.query_sequence
+    ):
+        print(
+            f"Skipping XA hit for {primary.query_name} on {ref_name}: CIGAR {cigar} "
+            f"implies a read length that does not match the primary alignment's sequence.",
+            file=sys.stderr,
+        )
         return None
 
     secondary = pysam.AlignedSegment(header)
@@ -71,6 +92,16 @@ def make_secondary_from_xa(
 
 def fill_secondary_seq(record: pysam.AlignedSegment, primary: pysam.AlignedSegment):
     """Fill SEQ/QUAL on an existing secondary record from its own primary record."""
+    if primary.query_sequence is None or not record.cigarstring or cigar_query_length(
+        record.cigarstring
+    ) != len(primary.query_sequence):
+        print(
+            f"Skipping SEQ fill for secondary alignment of {record.query_name}: CIGAR "
+            f"{record.cigarstring} does not match the primary alignment's sequence length.",
+            file=sys.stderr,
+        )
+        return record
+
     if record.is_reverse != primary.is_reverse:
         record.query_sequence = reverse_complement(primary.query_sequence)
         if primary.query_qualities is not None:
