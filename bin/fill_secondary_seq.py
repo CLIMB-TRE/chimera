@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import re
 import sys
+import tempfile
 import pysam
 
 XA_RE = re.compile(r"([^,]+),([+-])(\d+),([^,]+),(\d+)")
@@ -112,39 +114,60 @@ def fill_secondary_seq(record: pysam.AlignedSegment, primary: pysam.AlignedSegme
     return record
 
 
+def process_group(records: list, header: pysam.AlignmentHeader, out_bam: pysam.AlignmentFile):
+    """Process every record for a single query name (all mates, primary and
+    secondary/supplementary alike) together, then write them all out."""
+    primaries = {}
+    others = []
+    for read in records:
+        if not read.is_secondary and not read.is_supplementary:
+            primaries[(read.is_read1, read.is_read2)] = read
+        else:
+            others.append(read)
+
+    for read in primaries.values():
+        out_bam.write(read)
+        if read.has_tag("XA"):
+            xa = read.get_tag("XA")
+            if xa:
+                for ref_name, strand, pos, cigar, nm in parse_xa_tag(xa):
+                    secondary = make_secondary_from_xa(read, header, ref_name, strand, pos, cigar, nm)
+                    if secondary is not None:
+                        out_bam.write(secondary)
+
+    for record in others:
+        primary = primaries.get((record.is_read1, record.is_read2))
+        if primary is not None and (
+            record.query_sequence is None or record.query_sequence == ""
+        ):
+            record = fill_secondary_seq(record, primary)
+        out_bam.write(record)
+
+
 def run(args):
-    with pysam.AlignmentFile(args.input_bam, "rb") as in_bam:
-        header = in_bam.header
-        with pysam.AlignmentFile(args.output_bam, "wb", header=header) as out_bam:
-            primaries_by_read = {}
-            secondaries_by_read = {}
+    # Name-collate first so that every record for a read (primary, secondary,
+    # supplementary; both mates) ends up adjacent. samtools collate buckets
+    # records to temporary files rather than sorting in memory, so this scales
+    # to large inputs; it also means we only ever need to hold one query
+    # name's worth of records in memory below, instead of the whole file.
+    with tempfile.TemporaryDirectory(dir=".") as tmp_dir:
+        collated_bam = os.path.join(tmp_dir, "collated.bam")
+        pysam.collate("--no-PG", "-o", collated_bam, str(args.input_bam))
 
-            for read in in_bam:
-                key = (read.query_name, read.is_read1, read.is_read2)
-                if not read.is_secondary and not read.is_supplementary:
-                    primaries_by_read[key] = read
-                    out_bam.write(read)
-                    xa = None
-                    if read.has_tag("XA"):
-                        xa = read.get_tag("XA")
-                    if xa:
-                        for ref_name, strand, pos, cigar, nm in parse_xa_tag(xa):
-                            secondary = make_secondary_from_xa(
-                                read, header, ref_name, strand, pos, cigar, nm
-                            )
-                            if secondary is not None:
-                                out_bam.write(secondary)
-                else:
-                    secondaries_by_read.setdefault(key, []).append(read)
-
-            for key, records in secondaries_by_read.items():
-                primary = primaries_by_read.get(key)
-                for record in records:
-                    if primary is not None and (
-                        record.query_sequence is None or record.query_sequence == ""
-                    ):
-                        record = fill_secondary_seq(record, primary)
-                    out_bam.write(record)
+        with pysam.AlignmentFile(collated_bam, "rb") as in_bam:
+            header = in_bam.header
+            with pysam.AlignmentFile(args.output_bam, "wb", header=header) as out_bam:
+                current_qname = None
+                group = []
+                for read in in_bam:
+                    if read.query_name != current_qname:
+                        if group:
+                            process_group(group, header, out_bam)
+                        group = []
+                        current_qname = read.query_name
+                    group.append(read)
+                if group:
+                    process_group(group, header, out_bam)
 
 
 def main():
