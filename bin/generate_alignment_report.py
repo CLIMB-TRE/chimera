@@ -5,6 +5,34 @@ import math
 import csv
 import sys
 import pysam
+import json
+import jsonschema
+
+
+def generate_alignment_complexity(read: pysam.AlignedSegment) -> float:
+    """
+    Calculate the complexity of an aligned section of a read based on the proportion of consecutive identical bases.
+    e.g. How many bases are the same as the previous base, divided by total bases - 1. AAAGAGA would have a complexity score of 0.285... (2/7).
+
+    Parameters
+    ----------
+    read : pysam.AlignedSegment
+        A pysam AlignedSegment object representing a read.
+
+    Returns
+    -------
+    float
+        Complexity score between 0 and 1, where 1 indicates high complexity and 0 indicates low complexity.
+    """
+
+    seq = read.query_alignment_sequence
+    if not seq or len(seq) < 2:
+        return 0.0  # No sequence or too short to determine complexity
+
+    same_base_count = sum(1 for i in range(1, len(seq)) if seq[i] == seq[i - 1])
+    complexity = 1 - (same_base_count / (len(seq) - 1))
+
+    return complexity
 
 
 def generate_bam_stats(bam_file: str) -> dict:
@@ -43,6 +71,7 @@ def generate_bam_stats(bam_file: str) -> dict:
                 "alignment_lengths": [],
                 "read_lengths": [],
                 "alignment_proportions": [],
+                "alignment_complexities": [],
                 "start_end_positions": {},
                 "num_reads": 0,
                 "forward_reads": 0,
@@ -59,10 +88,18 @@ def generate_bam_stats(bam_file: str) -> dict:
             sys.exit(1)
 
         try:
+            aln_length = read.query_alignment_length
+            if aln_length == 0:
+                print(
+                    f"Skipping read {read.query_name} with zero-length alignment (no SEQ present)",
+                    file=sys.stderr,
+                )
+                stats_dict[ref_name]["num_reads"] -= 1
+                continue
+
             read_ref_map.setdefault(read.query_name, set())
             read_ref_map[read.query_name].add(ref_name)
 
-            aln_length = read.query_alignment_length
             identity = ((aln_length - nm_tag) / aln_length) * 100
 
             start_end_tuple = (read.reference_start, read.reference_end)
@@ -75,9 +112,13 @@ def generate_bam_stats(bam_file: str) -> dict:
             stats_dict[ref_name]["alignment_proportions"].append(
                 aln_length / read.infer_read_length()
             )
+            stats_dict[ref_name]["alignment_complexities"].append(
+                generate_alignment_complexity(read)
+            )
 
             if not read.is_reverse:
                 stats_dict[ref_name]["forward_reads"] += 1
+
         except Exception as e:
             print(f"Error processing read:\n{read}\nError: {e}", file=sys.stderr)
             sys.exit(1)
@@ -110,6 +151,7 @@ def generate_bam_stats(bam_file: str) -> dict:
         )
 
         out_stats[ref] = {
+            "num_reads": stats["num_reads"],
             "mean_identity": mean_identity if mean_identity > 0 else 0,
             "duplication_rate": duplication_rate if duplication_rate > 0 else 0,
             "mean_aln_length": mean_aln_length if mean_aln_length > 0 else 0,
@@ -118,6 +160,9 @@ def generate_bam_stats(bam_file: str) -> dict:
             "mean_read_length": round(np.mean(stats["read_lengths"]), 2),
             "mean_alignment_proportion": round(
                 np.mean(stats["alignment_proportions"]), 2
+            ),
+            "mean_alignment_complexity": round(
+                np.mean(stats["alignment_complexities"]), 2
             ),
         }
 
@@ -204,35 +249,13 @@ def depth_tsv_to_np_arrays(depth_tsv: str) -> dict:
     return depth_arrays
 
 
-def coverage_tsv_parser(depth_tsv: str) -> dict:
-    """
-    Parse a depth TSV file and return a dictionary with coverage information.
 
-    Parameters
-    ----------
-    depth_tsv : str
-        Path to the depth TSV file.
-
-    Returns
-    -------
-    list
-        A list of dictionaries, each containing coverage information for a specific region.
-    """
-    coverage_dict = {}
-
-    with open(depth_tsv, "r") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            coverage_dict[row["#rname"]] = row
-
-    return coverage_dict
-
-
-def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
+def alignment_stats(depth_array: np.ndarray, num_reads: int) -> dict:
     """Generate some basic stats from a depth array, including coverage evenness (E), mean depth, breadth at 1x and 10x, mapped reads, mapped bases.
 
     Args:
         depth_array (np.ndarray): Array of per-base coverage values.
+        num_reads (int): Number of mapped reads for this reference.
 
     Returns:
         dict: A dictionary containing the computed alignment statistics.
@@ -242,10 +265,8 @@ def alignment_stats(depth_array: np.ndarray, coverage_stats: dict) -> dict:
         "mean_depth": int(depth_array.mean()),
         "coverage_1x": int((depth_array > 0).sum() / len(depth_array) * 100),
         "coverage_10x": int((depth_array > 9).sum() / len(depth_array) * 100),
-        "mapped_reads": int(coverage_stats["numreads"]),
-        "mapped_bases": int(
-            int(coverage_stats["endpos"]) * float(coverage_stats["meandepth"])
-        ),
+        "mapped_reads": num_reads,
+        "mapped_bases": int(depth_array.sum()),
     }
 
     return stats
@@ -275,14 +296,176 @@ def reference_metadata_parser(database_metadata: str) -> dict:
     return metadata_dict
 
 
+def validate_scoring_matrix(scoring_matrix_path: str, json_schema_path: str) -> dict:
+    """Validate the scoring matrix against a JSON schema and check range continuity.
+
+    Args:
+        scoring_matrix_path (str): path to the scoring matrix file
+        json_schema_path (str): path to the JSON schema file
+
+    Raises:
+        jsonschema.ValidationError: If the scoring matrix does not conform to the JSON schema
+        jsonschema.SchemaError: If the JSON schema itself is invalid
+        ValueError: If any range has min >= max
+        ValueError: If ranges are not contiguous
+        ValueError: If an open-ended range is not the last one
+    Returns:
+        dict: The validated scoring matrix
+    """
+
+    with open(json_schema_path, "r") as schema_file:
+        schema = json.load(schema_file)
+
+    with open(scoring_matrix_path, "r") as matrix_file:
+        scoring_matrix = json.load(matrix_file)
+
+    jsonschema.validate(instance=scoring_matrix, schema=schema)
+
+    for metric, details in scoring_matrix["metrics"].items():
+
+        for i, r in enumerate(details["bands"]):
+            if r["max"] is not None and r["min"] >= r["max"]:
+                raise ValueError(f"{metric}: min must be < max")
+
+            if i > 0:
+                prev = details["bands"][i - 1]
+                if prev["max"] != r["min"]:
+                    raise ValueError(f"{metric}: ranges must be contiguous")
+
+            if r["max"] is None and i != len(details["bands"]) - 1:
+                raise ValueError(f"{metric}: open-ended range must be last")
+
+    for i, r in enumerate(scoring_matrix["total_score_thresholds"]):
+        if r["max"] is not None and r["min"] >= r["max"]:
+            raise ValueError(f"Score category {r['label']}: min must be < max")
+
+        if i > 0:
+            prev = scoring_matrix["total_score_thresholds"][i - 1]
+            if prev["max"] != r["min"]:
+                raise ValueError(
+                    f"Score category {r['label']}: ranges must be contiguous"
+                )
+
+        if r["max"] is None and i != len(scoring_matrix["total_score_thresholds"]) - 1:
+            raise ValueError(
+                f"Score category {r['label']}: open-ended range must be last"
+            )
+
+    return scoring_matrix
+
+
+def score_record(record: dict, scoring_matrix: dict) -> int:
+    total_score = 0
+
+    for metric, details in scoring_matrix["metrics"].items():
+        value = record.get(metric)
+        if value is None:
+            continue
+
+        for band in details["bands"]:
+            if band["max"] is None:
+                if float(value) >= band["min"]:
+                    total_score += band["score"]
+                    break
+            else:
+                if band["min"] <= float(value) < band["max"]:
+                    total_score += band["score"]
+                    break
+
+    return total_score
+
+
+def total_score_category(record: dict, scoring_matrix: dict) -> str:
+    score = score_record(record, scoring_matrix)
+
+    thresholds = scoring_matrix["total_score_thresholds"]
+    for category in thresholds:
+        if category["max"] is None:
+            if float(score) >= category["min"]:
+                return category["label"]
+        else:
+            if category["min"] <= float(score) < category["max"]:
+                return category["label"]
+
+
 def run(args):
 
     depth_arrays = depth_tsv_to_np_arrays(args.depth_tsv)
-    coverage_info = coverage_tsv_parser(args.coverage_tsv)
     reference_metadata = reference_metadata_parser(args.database_metadata)
     bam_stats = generate_bam_stats(args.bam)
 
-    # Print report
+    ref_stat_rows = []
+
+    for ref in depth_arrays:
+        if ref not in bam_stats:
+            print(f"ERROR: Reference {ref} found in depth TSV but not in BAM stats.")
+            sys.exit(1)
+
+        stats = alignment_stats(depth_arrays[ref], bam_stats[ref]["num_reads"])
+        stats["unique_accession"] = ref
+        stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
+        stats["human_readable"] = reference_metadata[ref]["human_readable"]
+        stats["accession_description"] = reference_metadata[ref]["accession_description"]
+        stats["segment"] = reference_metadata[ref].get("segment", "")
+        stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
+        stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
+        stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
+        stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
+        stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
+        stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
+        stats["mean_read_length"] = bam_stats[ref]["mean_read_length"]
+        stats["mean_alignment_proportion"] = bam_stats[ref]["mean_alignment_proportion"]
+        stats["mean_alignment_complexity"] = bam_stats[ref]["mean_alignment_complexity"]
+        ref_stat_rows.append(stats)
+
+    # Only expose the 'segment' column (added by newer database_metadata formats,
+    # e.g. for multi-segment viral genomes) when at least one reference has a value.
+    has_segment = any(row.get("segment") for row in ref_stat_rows)
+    if not has_segment:
+        for row in ref_stat_rows:
+            row.pop("segment", None)
+    segment_fieldname = ["segment"] if has_segment else []
+
+    if not args.scoring_matrix:
+        writer = csv.DictWriter(
+            sys.stdout,
+            delimiter="\t",
+            fieldnames=[
+                "taxon_id",
+                "human_readable",
+                "unique_accession",
+                "accession_description",
+                *segment_fieldname,
+                "sequence_length",
+                "evenness_value",
+                "mean_depth",
+                "coverage_1x",
+                "coverage_10x",
+                "mapped_reads",
+                "uniquely_mapped_reads",
+                "mapped_bases",
+                "mean_read_identity",
+                "read_duplication_rate",
+                "forward_proportion",
+                "mean_read_length",
+                "mean_alignment_length",
+                "mean_alignment_proportion",
+                "mean_alignment_complexity",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(ref_stat_rows)
+        return
+
+    if args.json_schema:
+        scoring_matrix = validate_scoring_matrix(args.scoring_matrix, args.json_schema)
+    else:
+        print(
+            "WARNING: No JSON schema provided so skipping scoring matrix validation. This may break scoring!",
+            file=sys.stderr,
+        )
+        scoring_matrix = json.load(open(args.scoring_matrix, "r"))
+
     writer = csv.DictWriter(
         sys.stdout,
         delimiter="\t",
@@ -291,6 +474,7 @@ def run(args):
             "human_readable",
             "unique_accession",
             "accession_description",
+            *segment_fieldname,
             "sequence_length",
             "evenness_value",
             "mean_depth",
@@ -305,39 +489,27 @@ def run(args):
             "mean_read_length",
             "mean_alignment_length",
             "mean_alignment_proportion",
+            "mean_alignment_complexity",
+            "total_score",
+            "confidence",
         ],
     )
     writer.writeheader()
 
-    for ref in depth_arrays:
-        if ref in coverage_info:
-            stats = alignment_stats(depth_arrays[ref], coverage_info[ref])
-            stats["unique_accession"] = ref
-            stats["taxon_id"] = reference_metadata[ref]["taxon_id"]
-            stats["human_readable"] = reference_metadata[ref]["human_readable"]
-            stats["accession_description"] = reference_metadata[ref][
-                "accession_description"
-            ]
-            stats["sequence_length"] = reference_metadata[ref]["sequence_length"]
-        else:
-            print(f"ERROR: Reference {ref} found in depth TSV but not in coverage TSV.")
-            sys.exit(1)
+    for row in ref_stat_rows:
+        total_score = score_record(row, scoring_matrix)
+        score_category = total_score_category(row, scoring_matrix)
 
-        if ref in bam_stats:
-            stats["mean_read_identity"] = bam_stats[ref]["mean_identity"]
-            stats["read_duplication_rate"] = bam_stats[ref]["duplication_rate"]
-            stats["mean_alignment_length"] = bam_stats[ref]["mean_aln_length"]
-            stats["forward_proportion"] = bam_stats[ref]["forward_proportion"]
-            stats["uniquely_mapped_reads"] = bam_stats[ref]["uniquely_mapped_reads"]
-            stats["mean_read_length"] = bam_stats[ref]["mean_read_length"]
-            stats["mean_alignment_proportion"] = bam_stats[ref][
-                "mean_alignment_proportion"
-            ]
-        else:
-            print(f"WARNING: Reference {ref} found in depth TSV but not in BAM stats.")
-            sys.exit(1)
+        row["total_score"] = total_score
+        row["confidence"] = score_category
 
-        writer.writerow(stats)
+    sorted_rows = sorted(
+        ref_stat_rows,
+        key=lambda x: x["total_score"],
+        reverse=True,
+    )
+
+    writer.writerows(sorted_rows)
 
 
 def main():
@@ -353,18 +525,23 @@ def main():
         help="Path to the depth TSV file, generated by samtools depth -a.",
     )
     parser.add_argument(
-        "--coverage_tsv",
-        type=str,
-        required=True,
-        help="Path to the coverage TSV file, generated by samtools coverage.",
-    )
-    parser.add_argument(
         "--database_metadata",
         type=str,
         required=True,
         help="Path to the database metadata TSV file, containing reference taxonomy etc.",
     )
-    parser.add_argument("--bam", type=str, required=True, help="Path to the BAM file.")
+    parser.add_argument(
+        "--scoring_matrix",
+        type=str,
+        help="Path to the scoring matrix file.",
+    )
+    parser.add_argument(
+        "--json_schema",
+        type=str,
+        help="Path to the JSON schema file for validating the scoring matrix.",
+    )
+
+    parser.add_argument("bam", type=str, help="Path to the BAM file.")
     args = parser.parse_args()
 
     run(args)

@@ -1,0 +1,268 @@
+{
+    "metrics": {
+        "evenness_value": {
+            "type": "integer",
+            "description": "Evenness value of coverage across the reference sequence",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 10,
+                    "score": -2
+                },
+                {
+                    "min": 10,
+                    "max": 40,
+                    "score": 0
+                },
+                {
+                    "min": 40,
+                    "max": null,
+                    "score": 2
+                }
+            ]
+        },
+        "mean_depth": {
+            "type": "integer",
+            "description": "Mean depth of coverage across the reference sequence",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 10,
+                    "score": 0
+                },
+                {
+                    "min": 10,
+                    "max": null,
+                    "score": 1
+                }
+            ]
+        },
+        "coverage_1x": {
+            "type": "integer",
+            "description": "Percentage of the reference sequence covered at least 1x",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 20,
+                    "score": 0
+                },
+                {
+                    "min": 20,
+                    "max": 50,
+                    "score": 1
+                },
+                {
+                    "min": 50,
+                    "max": 100,
+                    "score": 2
+                }
+            ]
+        },
+        "coverage_10x": {
+            "type": "integer",
+            "description": "Percentage of the reference sequence covered at least 10x",
+            "bands": [
+                {
+                    "min": 1,
+                    "max": 20,
+                    "score": 0
+                },
+                {
+                    "min": 20,
+                    "max": null,
+                    "score": 1
+                }
+            ]
+        },
+        "mapped_reads": {
+            "type": "integer",
+            "description": "Number of reads mapped to the reference sequence",
+            "bands": [
+                {
+                    "min": 1,
+                    "max": 2,
+                    "score": -10
+                },
+                {
+                    "min": 2,
+                    "max": 10,
+                    "score": 0
+                },
+                {
+                    "min": 10,
+                    "max": null,
+                    "score": 1
+                }
+            ]
+        },
+        "uniquely_mapped_reads": {
+            "type": "integer",
+            "description": "Number of uniquely mapped reads to the reference sequence",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 1,
+                    "score": -1
+                },
+                {
+                    "min": 1,
+                    "max": null,
+                    "score": 0
+                }
+            ]
+        },
+        "mapped_bases": {
+            "type": "integer",
+            "description": "Number of bases mapped to the reference sequence",
+            "bands": [
+                {
+                    "min": 1,
+                    "max": 10000,
+                    "score": 0
+                },
+                {
+                    "min": 10000,
+                    "max": null,
+                    "score": 1
+                }
+            ]
+        },
+        "mean_read_identity": {
+            "type": "float",
+            "description": "Estimated mean read identity percentage of reads mapped to the reference sequence",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 60,
+                    "score": -3
+                },
+                {
+                    "min": 60,
+                    "max": 85,
+                    "score": -1
+                },
+                {
+                    "min": 85,
+                    "max": 100,
+                    "score": 1
+                }
+            ]
+        },
+        "read_duplication_rate": {
+            "type": "float",
+            "description": "Estimated rate of read duplication in the mapped reads",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 10,
+                    "score": 1
+                },
+                {
+                    "min": 10,
+                    "max": null,
+                    "score": 0
+                }
+            ]
+        },
+        "forward_proportion": {
+            "type": "float",
+            "description": "Proportion of mapped reads that are in the forward orientation",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 0.45,
+                    "score": -1
+                },
+                {
+                    "min": 0.45,
+                    "max": 0.55,
+                    "score": 0
+                },
+                {
+                    "min": 0.55,
+                    "max": 1.0,
+                    "score": -1
+                }
+            ]
+        },
+        "mean_alignment_proportion": {
+            "type": "float",
+            "description": "Mean proportion of each read that is aligned to the reference sequence",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 0.50,
+                    "score": -5
+                },
+                {
+                    "min": 0.50,
+                    "max": 0.70,
+                    "score": 0
+                },
+                {
+                    "min": 0.70,
+                    "max": 0.85,
+                    "score": 1
+                },
+                {
+                    "min": 0.85,
+                    "max": 1.0,
+                    "score": 2
+                }
+            ]
+        },
+        "mean_alignment_complexity": {
+            "type": "float",
+            "description": "Mean complexity of the aligned portion of each read, defined as the proportion of bases in the aligned portion which are not the same as the preceding base",
+            "bands": [
+                {
+                    "min": 0,
+                    "max": 0.30,
+                    "score": -5
+                },
+                {
+                    "min": 0.30,
+                    "max": 0.50,
+                    "score": -1
+                },
+                {
+                    "min": 0.50,
+                    "max": 0.60,
+                    "score": 0
+                },
+                {
+                    "min": 0.60,
+                    "max": 0.80,
+                    "score": 1
+                },
+                {
+                    "min": 0.80,
+                    "max": 1.0,
+                    "score": -1
+                }
+            ]
+        }
+    },
+    "total_score_thresholds": [
+        {
+            "min": -1000,
+            "max": 5,
+            "label": "fail"
+        },
+        {
+            "min": 5,
+            "max": 8,
+            "label": "low"
+        },
+        {
+            "min": 8,
+            "max": 11,
+            "label": "medium"
+        },
+        {
+            "min": 11,
+            "max": null,
+            "label": "high"
+        }
+    ]
+}

@@ -4,12 +4,14 @@ process ALIGNMENT_REPORT {
 
     conda "${moduleDir}/environment.yml"
     container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container
-        ? 'oras://community.wave.seqera.io/library/pip_numpy_pysam:410caf1b9aff14b8'
-        : 'community.wave.seqera.io/library/pip_numpy_pysam:b0f6802385070dc7'}"
+        ? 'oras://community.wave.seqera.io/library/pysam_jsonschema_numpy:0d4beb5f588f4b4d'
+        : 'community.wave.seqera.io/library/pysam_jsonschema_numpy:8ec3d505e678a720'}"
 
     input:
-    tuple val(meta), path(depth_tsv), path(coverage_tsv), path(bam)
+    tuple val(meta), path(depth_tsv), path(bam)
     path database_metadata
+    path scoring_matrix
+    path json_schema
 
     output:
     tuple val(meta), path("*.alignment_report.tsv"), emit: alignment_report
@@ -19,9 +21,10 @@ process ALIGNMENT_REPORT {
     """
     generate_alignment_report.py \\
         --depth_tsv ${depth_tsv} \\
-        --coverage_tsv ${coverage_tsv} \\
         --database_metadata ${database_metadata} \\
-        --bam ${bam} \\
+        --scoring_matrix ${scoring_matrix} \\
+        --json_schema ${json_schema} \\
+        ${bam} \\
         > ${prefix}.alignment_report.tsv
     """
 

@@ -10,6 +10,32 @@
 
 ## Pipeline tools
 
+- [sylph](https://github.com/bluenote-1577/sylph)
+
+  > Shaw J, Yu YW. Rapid species-level metagenome profiling and containment estimation with sylph. Nat Biotechnol. 2025 Aug;43(8):1348-1359. Epub 2024 Oct 8. doi: 10.1038/s41587-024-02412-y. PubMed PMID: 39379646; PubMed Central PMCID: PMC12339375.
+
+- [minimap2](https://github.com/lh3/minimap2)
+
+  > Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018 Sep 15;34(18):3094-3100. doi: 10.1093/bioinformatics/bty191. PubMed PMID: 29750242; PubMed Central PMCID: PMC6137996.
+
+- [bwa-mem2](https://github.com/bwa-mem2/bwa-mem2)
+
+  > Vasimuddin M, Misra S, Li H, Aluru S. Efficient Architecture-Aware Acceleration of BWA-MEM for Multicore Systems. 2019 IEEE International Parallel and Distributed Processing Symposium (IPDPS), 2019, pp. 314-324. doi: 10.1109/IPDPS.2019.00041.
+
+- [Samtools](https://pubmed.ncbi.nlm.nih.gov/19505943/)
+
+  > Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. doi: 10.1093/bioinformatics/btp352. Epub 2009 Jun 8. PubMed PMID: 19505943; PubMed Central PMCID: PMC2723002.
+
+- [pysam](https://github.com/pysam-developers/pysam)
+
+  > Used throughout the pipeline's custom BAM-processing scripts (`bin/bam_filter.py`, `bin/fill_secondary_seq.py`, `bin/generate_alignment_report.py`); a Python interface to htslib and the SAMtools/BCFtools suite.
+
+- [GTDB](https://gtdb.ecogenomic.org/)
+
+  > Parks DH, Chuvochina M, Rinke C, Mussig AJ, Chaumeil PA, Hugenholtz P. GTDB: an ongoing census of bacterial and archaeal diversity through a phylogenetically consistent, rank normalized and complete genome-based taxonomy. Nucleic Acids Res. 2022 Jan 7;50(D1):D785-D794. doi: 10.1093/nar/gkab776. PubMed PMID: 34520557; PubMed Central PMCID: PMC8728215.
+  >
+  > Used by `bin/sylph_ncbi_taxonomy_rationaliser.py` to resolve sylph reference genomes to NCBI taxIDs when building `--sylph_taxdb`.
+
 ## Software packaging/containerisation tools
 
 - [Anaconda](https://anaconda.com)

@@ -53,7 +53,7 @@
                     "format": "file-path",
                     "exists": true,
                     "description": "Path to sylph database.",
-                    "help_text": "Path to a pre-built sylph database for the reference database you are using.",
+                    "help_text": "Path to a pre-built sylph database for the reference database you are using. Not required when 'skip_sylph' is enabled.",
                     "fa_icon": "fas fa-dna"
                 },
                 "sylph_taxdb": {
@@ -61,7 +61,7 @@
                     "format": "file-path",
                     "exists": true,
                     "description": "Path to sylph taxonomy database.",
-                    "help_text": "Path to a pre-built sylph taxonomy database for the reference database you are using.",
+                    "help_text": "Path to a pre-built sylph taxonomy database for the reference database you are using. Not required when 'skip_sylph' is enabled.",
                     "fa_icon": "fas fa-dna"
                 },
                 "database_metadata": {
@@ -70,6 +70,22 @@
                     "exists": true,
                     "description": "Path to database metadata.",
                     "help_text": "Path to a pre-built database metadata for the alignment reference database you are using.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "alignment_scoring_matrix": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to alignment scoring matrix JSON file.",
+                    "help_text": "Path to a JSON file defining the scoring matrix used to score alignments in the alignment report.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "alignment_scoring_json_schema": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "description": "Path to alignment scoring JSON schema file.",
+                    "help_text": "Path to a JSON schema file defining the structure of the alignment scoring matrix JSON file.",
                     "fa_icon": "fas fa-dna"
                 }
             }
@@ -86,6 +102,26 @@
                     "help_text": "Minimum Average Nucleotide Identity (ANI) for Sylph to output a match.",
                     "minimum": 0,
                     "maximum": 100
+                },
+                "skip_sylph": {
+                    "type": "boolean",
+                    "description": "Skip sylph taxonomic profiling and taxonomy reporting entirely.",
+                    "help_text": "When enabled, the pipeline does not run sylph profiling or produce a sylph taxonomy report, and 'sylph_db'/'sylph_taxdb' are not required.",
+                    "default": false
+                },
+                "min_alignment_proportion_filter": {
+                    "type": "boolean",
+                    "description": "Enable filtering of reads by minimum alignment proportion.",
+                    "help_text": "When enabled, reads are filtered by 'min_alignment_proportion' before downstream processing. When disabled, 'min_alignment_proportion' is ignored and no reads are removed on this basis.",
+                    "default": false
+                },
+                "min_alignment_proportion": {
+                    "type": "number",
+                    "description": "Minimum alignment proportion for a read to be kept after filtering.",
+                    "help_text": "The minimum proportion of the read that must be aligned to the reference for the read to be kept after filtering. Value should be between 0 and 1. Only used when 'min_alignment_proportion_filter' is enabled.",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "default": 0.5
                 }
             }
         },

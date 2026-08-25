@@ -8,7 +8,7 @@ process SAMTOOLS_DEPTH {
         'biocontainers/samtools:1.22.1--h96c455f_0' }"
 
     input:
-    tuple val(meta1), path(bam)
+    tuple val(meta1), path(bam), path(bai)
     tuple val(meta2), path(intervals)
 
     output:
@@ -23,12 +23,19 @@ process SAMTOOLS_DEPTH {
     def prefix = task.ext.prefix ?: "${meta1.id}"
     def positions = intervals ? "-b ${intervals}" : ""
     """
+    if [ -n "${positions}" ]; then
+        DEPTH_POSITIONS="${positions}"
+    else
+        samtools idxstats ${bam} | awk '\$3 > 0 {print \$1"\\t0\\t"\$2}' > covered_regions.bed
+        DEPTH_POSITIONS="-b covered_regions.bed"
+    fi
+
     # Note: --threads value represents *additional* CPUs to allocate (total CPUs = 1 + --threads).
     samtools \\
         depth \\
         --threads ${task.cpus-1} \\
         $args \\
-        $positions \\
+        \${DEPTH_POSITIONS} \\
         -o ${prefix}.tsv \\
         $bam
 

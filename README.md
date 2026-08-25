@@ -13,48 +13,46 @@
 
 ## Introduction
 
-**CLIMB-TRE/chimera** is a bioinformatics pipeline that ...
+**CLIMB-TRE/chimera** is a bioinformatics pipeline for profiling Illumina and Nanopore (ONT) sequencing reads against a curated reference database and flagging how confidently each detected reference is actually supported by the read data. It runs [sylph](https://github.com/bluenote-1577/sylph) for fast taxonomic profiling of raw reads, aligns reads to the reference database with [minimap2](https://github.com/lh3/minimap2) (ONT) or [bwa-mem2](https://github.com/bwa-mem2/bwa-mem2) (Illumina), and combines per-reference coverage and alignment-quality statistics into a scored confidence report — helping to distinguish genuine hits from cross-mapping, contamination, or other low-confidence alignments.
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+The pipeline:
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/guidelines/graphic_design/workflow_diagrams#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
+1. Profiles each sample's taxonomic composition against a sylph database (`SYLPH_PROFILE`)
+2. Aligns reads to a reference database with minimap2 (ONT) or bwa-mem2 (Illumina) (`MINIMAP2_ALIGN`/`BWAMEM2_MEM`)
+3. For Illumina data, expands multi-mapping loci into full secondary alignment records with sequence filled in (`FILL_SECONDARY_SEQ`)
+4. Optionally filters out reads with a low proportion of aligned bases (`FILTER_BAM`)
+5. Computes per-base, per-reference depth of coverage (`SAMTOOLS_DEPTH`)
+6. Resolves the sylph profile's reference genomes to NCBI taxIDs (`SYLPH_TAXONOMY`)
+7. Produces a per-reference alignment report with configurable confidence scoring (`ALIGNMENT_REPORT`)
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
-
 First, prepare a samplesheet with your input data that looks as follows:
 
 `samplesheet.csv`:
 
 ```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+sample,platform,fastq_1,fastq_2
+CONTROL_REP1,illumina,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
-
--->
+Each row represents a fastq file (`platform` of `ont` or `illumina.se`) or a pair of fastq files (`platform` of `illumina`). See [`docs/usage.md`](docs/usage.md) for the full samplesheet specification and for the reference database parameters (`--mm2_index`, `--bwa_index_prefix`, `--sylph_db`, `--sylph_taxdb`, `--database_metadata`) the pipeline requires.
 
 Now, you can run the pipeline using:
-
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
 
 ```bash
 nextflow run CLIMB-TRE/chimera \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
-   --outdir <OUTDIR>
+   --outdir <OUTDIR> \
+   --mm2_index /path/to/reference.mmi \
+   --bwa_index_prefix /path/to/reference.fa \
+   --sylph_db /path/to/reference.syldb \
+   --sylph_taxdb /path/to/sylph_taxdb.tsv \
+   --database_metadata /path/to/database_metadata.tsv
 ```
 
 > [!WARNING]
@@ -64,20 +62,11 @@ nextflow run CLIMB-TRE/chimera \
 
 CLIMB-TRE/chimera was originally written by biowilko.
 
-We thank the following people for their extensive assistance in the development of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
-
 ## Contributions and Support
 
 If you would like to contribute to this pipeline, please see the [contributing guidelines](.github/CONTRIBUTING.md).
 
 ## Citations
-
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi and badge at the top of this file. -->
-<!-- If you use CLIMB-TRE/chimera for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
-
-<!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 
