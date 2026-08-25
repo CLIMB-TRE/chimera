@@ -41,14 +41,11 @@
             ],
             [
                 "illumina_test.alignment_report.tsv:md5,a7c5d4be3350b4c9ee7468099a52a4b7",
-                "illumina_test.bam:md5,432ee23c851acdfd78b46cf6459a75ac",
-                "illumina_test.secondary_filled.bam:md5,432ee23c851acdfd78b46cf6459a75ac",
                 "illumina_test.sylph_taxonomy_report.tsv:md5,cb8bbd12f60396862717300fc3515403",
-                "ont_test.alignment_report.tsv:md5,b7e7e90d08334eb5b206720562ded109",
-                "ont_test.bam:md5,9b2f8d404cf67ecc848616dd45e3abb6"
+                "ont_test.alignment_report.tsv:md5,b7e7e90d08334eb5b206720562ded109"
             ]
         ],
-        "timestamp": "2026-08-25T10:55:08.032436",
+        "timestamp": "2026-08-25T11:26:52.248475",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.0"
