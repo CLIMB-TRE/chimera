@@ -13,7 +13,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { CHIMERA  } from './workflows/chimera'
+include { CHIMERA                 } from './workflows/chimera'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_chimera_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_chimera_pipeline'
 /*
@@ -26,7 +26,6 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_chim
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
 workflow CLIMBTRE_CHIMERA {
-
     take:
     samplesheet // channel: samplesheet read in from --input
 
@@ -35,7 +34,7 @@ workflow CLIMBTRE_CHIMERA {
     //
     // WORKFLOW: Run pipeline
     //
-    CHIMERA (
+    CHIMERA(
         samplesheet
     )
 }
@@ -46,37 +45,29 @@ workflow CLIMBTRE_CHIMERA {
 */
 
 workflow {
-
-    main:
     //
     // SUBWORKFLOW: Run initialisation tasks
     //
-    PIPELINE_INITIALISATION (
+    PIPELINE_INITIALISATION(
         params.version,
         params.validate_params,
         params.monochrome_logs,
         args,
         params.outdir,
-        params.input
+        params.input,
     )
 
     //
     // WORKFLOW: Run main workflow
     //
-    CLIMBTRE_CHIMERA (
+    CLIMBTRE_CHIMERA(
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //
     // SUBWORKFLOW: Run completion tasks
     //
-    PIPELINE_COMPLETION (
+    PIPELINE_COMPLETION(
         params.outdir,
         params.monochrome_logs,
     )
 }
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    THE END
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
