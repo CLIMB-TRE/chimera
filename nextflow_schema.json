@@ -32,20 +32,12 @@
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
                 },
-                "mm2_index": {
+                "rammap_index": {
                     "type": "string",
                     "format": "file-path",
                     "exists": true,
-                    "description": "Path to minimap2 index for reference db.",
-                    "help_text": "Path to a pre-built minimap2 index for the reference database you are using. If you don't provide this, the pipeline will build the index itself, but this may take some time.",
-                    "fa_icon": "fas fa-dna"
-                },
-                "bwa_index_prefix": {
-                    "type": "string",
-                    "format": "file-path",
-                    "exists": true,
-                    "description": "Path to BWA index for reference db. e.g. if your index files are named ref.fa, ref.fa.amb, ref.fa.ann, ref.fa.bwt, ref.fa.pac, ref.fa.sa then you should provide the path to 'ref.fa' here.",
-                    "help_text": "Path to a pre-built BWA index for the reference database you are using.",
+                    "description": "Path to a reference database for rammap - a raw FASTA or a pre-built minimap2/rammap index.",
+                    "help_text": "Path to a pre-built minimap2 (`.mmi`) or rammap (`.rmmi`) index of the reference database, or the raw reference FASTA itself. Used for all platforms (ont, illumina, illumina.se). If you don't provide a pre-built index, rammap will build it itself, but this may take some time.",
                     "fa_icon": "fas fa-dna"
                 },
                 "sylph_db": {

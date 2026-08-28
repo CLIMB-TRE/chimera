@@ -3,6 +3,17 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.5.0 - unreleased
+
+### `Changed`
+
+- Replaced minimap2 (ONT) and bwa-mem2 (Illumina) with a single aligner, [rammap](https://github.com/jwanglab/rammap), used for all platforms via platform-specific presets (`RAMMAP_ALIGN` replaces `MINIMAP2_ALIGN`/`BWAMEM2_MEM`)
+- `--mm2_index` and `--bwa_index_prefix` replaced by a single `--rammap_index` parameter, which accepts a raw reference FASTA or a pre-built minimap2/rammap index
+
+### `Removed`
+
+- `FILL_SECONDARY_SEQ` module and `bin/fill_secondary_seq.py` - no longer needed, since rammap reports real secondary alignment records with sequence for all platforms via `--secondary-seq`
+
 ## v0.4.0 - 2026-08-10
 
 ### `Added`

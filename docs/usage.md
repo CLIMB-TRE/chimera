@@ -54,15 +54,14 @@ Unlike pipelines that build their own reference index, CLIMB-TRE/chimera expects
 
 | Parameter                        | Description                                                                                                                                                              |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--mm2_index`                     | Path to a pre-built minimap2 index (`.mmi`) of the reference database, used for `ont` samples.                                                                          |
-| `--bwa_index_prefix`               | Path prefix to a pre-built bwa-mem2 index of the reference database (e.g. `ref.fa` if the index files are `ref.fa.0123`, `ref.fa.amb`, etc.), used for Illumina samples. |
+| `--rammap_index`                  | Path to a pre-built minimap2/rammap index (`.mmi`/`.rmmi`) of the reference database, or the raw reference FASTA. Used for all platforms.                              |
 | `--sylph_db`                       | Path to a pre-sketched sylph database (`.syldb`) of the reference genomes, used for taxonomic profiling.                                                                |
 | `--sylph_taxdb`                    | Path to a sylph taxonomy lookup TSV mapping each reference genome accession to an NCBI taxID and scientific name. See [Building the sylph taxonomy database](#building-the-sylph-taxonomy-database) below for how to build this. |
 | `--database_metadata`              | Path to a TSV with one row per reference accession, containing at minimum `unique_accession`, `taxon_id`, `human_readable`, `accession_description` and `sequence_length` columns, used to annotate the alignment report. An optional `segment` column (e.g. for multi-segment viral genomes) is also recognised — if any row has a non-blank value, a `segment` column is added to the alignment report. |
 | `--alignment_scoring_matrix`       | Path to the JSON file defining the banded scoring matrix used to score each reference's alignment statistics (defaults to the bundled [`assets/alignment_scoring_matrix.json`](../assets/alignment_scoring_matrix.json)). |
 | `--alignment_scoring_json_schema`  | Path to the JSON schema used to validate `--alignment_scoring_matrix` (defaults to the bundled [`assets/alignment_scoring_matrix_schema.json`](../assets/alignment_scoring_matrix_schema.json)). |
 
-All reference genomes referenced by `--bwa_index_prefix`/`--mm2_index` should be the same set as those sketched into `--sylph_db`, keyed by the same accessions used in `--sylph_taxdb` and `--database_metadata`, so that results can be joined across the sylph and alignment arms of the pipeline.
+All reference genomes referenced by `--rammap_index` should be the same set as those sketched into `--sylph_db`, keyed by the same accessions used in `--sylph_taxdb` and `--database_metadata`, so that results can be joined across the sylph and alignment arms of the pipeline.
 
 If you only need the alignment report and have no need for taxonomic profiling (or don't have a sylph database/taxdb built yet), set `--skip_sylph` to `true`. This skips sylph profiling and the sylph taxonomy report entirely, and `--sylph_db`/`--sylph_taxdb` are not required in that case.
 
@@ -74,8 +73,7 @@ The typical command for running the pipeline is as follows:
 nextflow run CLIMB-TRE/chimera \
     --input ./samplesheet.csv \
     --outdir ./results \
-    --mm2_index /path/to/reference.mmi \
-    --bwa_index_prefix /path/to/reference.fa \
+    --rammap_index /path/to/reference.mmi \
     --sylph_db /path/to/reference.syldb \
     --sylph_taxdb /path/to/sylph_taxdb.tsv \
     --database_metadata /path/to/database_metadata.tsv \

@@ -36,12 +36,12 @@ The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes d
 <summary>Output files</summary>
 
 - `<sample_id>/`
-  - `*.bam`: Coordinate-sorted BAM file of reads aligned against the reference database (`--mm2_index` for `ont` samples via minimap2, `--bwa_index_prefix` for `illumina`/`illumina.se` samples via bwa-mem2).
+  - `*.bam`: Coordinate-sorted BAM file of reads aligned against the reference database (`--rammap_index`) via [rammap](https://github.com/jwanglab/rammap).
   - `*.bam.bai`: BAM index.
 
 </details>
 
-ONT reads are aligned with [minimap2](https://github.com/lh3/minimap2) (`-x map-ont --secondary=yes -N 50 --secondary-seq`), which reports up to 50 secondary alignments per read with sequence included. Illumina reads are aligned with [bwa-mem2](https://github.com/bwa-mem2/bwa-mem2) (`-a -h 50`); because bwa-mem2 only reports secondary alignments as full records for unpaired reads, alternative loci recorded in each read's `XA` tag are additionally expanded into full secondary alignment records, with sequence and quality copied (reverse-complemented where necessary) from that read's primary alignment, so that Illumina secondary alignments carry sequence in the same way ONT ones do. This expansion is always applied to Illumina alignments and is not user-configurable.
+All platforms are aligned with a single tool, [rammap](https://github.com/jwanglab/rammap) (a minimap2-compatible aligner), with the preset chosen per sample based on `platform`: `ont` samples use `-x map-ont`, `illumina` (paired-end) samples use `-x sr`, and `illumina.se` (single-end) samples use `-x sr --frag no --pairing no` (to avoid adjacent reads in a single fastq being mistaken for a mate pair). All platforms are additionally run with `--secondary=yes -N 50 --secondary-seq`, reporting up to 50 secondary alignments per read with sequence included.
 
 ### Alignment proportion filtering
 

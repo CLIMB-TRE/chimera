@@ -7,8 +7,7 @@ include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_chimera_pipeline'
 
-include { BWAMEM2_MEM            } from '../modules/nf-core/bwamem2/mem/main'
-include { MINIMAP2_ALIGN         } from '../modules/nf-core/minimap2/align/main'
+include { RAMMAP_ALIGN           } from '../modules/local/rammap_align/rammap_align'
 include { SYLPH_PROFILE          } from '../modules/nf-core/sylph/profile/main'
 include { SAMTOOLS_SORT          } from '../modules/nf-core/samtools/sort/main'
 include { SAMTOOLS_INDEX         } from '../modules/nf-core/samtools/index/main'
@@ -17,7 +16,6 @@ include { SAMTOOLS_DEPTH         } from '../modules/nf-core/samtools/depth/main'
 include { SYLPH_TAXONOMY         } from '../modules/local/sylph_taxonomy/sylph_taxonomy'
 include { ALIGNMENT_REPORT       } from '../modules/local/alignment_report/alignment_report'
 include { FILTER_BAM             } from '../modules/local/filter_bam/filter_bam'
-include { FILL_SECONDARY_SEQ     } from '../modules/local/fill_secondary_seq/fill_secondary_seq'
 
 
 /*
@@ -34,8 +32,7 @@ workflow CHIMERA {
 
     ch_versions = Channel.empty()
 
-    mm2_index = file(params.mm2_index, checkIfExists: true)
-    bwa_index = file("${params.bwa_index_prefix}*")
+    rammap_index = file(params.rammap_index, checkIfExists: true)
     database_metadata = file(params.database_metadata, checkIfExists: true)
 
     //
@@ -58,26 +55,12 @@ workflow CHIMERA {
         )
     }
 
-    // Run the appropriate aligner based on platform
-    ch_samplesheet_branched = ch_samplesheet.branch { meta, _fastq ->
-        ont: meta.platform == "ont"
-        illumina: meta.platform == "illumina" || meta.platform == "illumina.se"
-    }
+    RAMMAP_ALIGN(ch_samplesheet, [[:], rammap_index], "bai")
+    ch_versions = ch_versions.mix(RAMMAP_ALIGN.out.versions.first())
 
-    MINIMAP2_ALIGN(ch_samplesheet_branched.ont, [[:], mm2_index], true, "bai", false, false)
-    ch_versions = ch_versions.mix(MINIMAP2_ALIGN.out.versions.first())
+    ch_aligned = RAMMAP_ALIGN.out.bam
 
-    BWAMEM2_MEM(ch_samplesheet_branched.illumina, [[:], bwa_index], [[:], []], true)
-    ch_versions = ch_versions.mix(BWAMEM2_MEM.out.versions.first())
-
-    // Expand bwa-mem2 XA tags into real secondary alignment records and fill SEQ/QUAL
-    // on any secondary records missing sequence, so Illumina secondaries carry sequence
-    // the same way minimap2's --secondary-seq already does for ONT.
-    FILL_SECONDARY_SEQ(BWAMEM2_MEM.out.bam)
-
-    ch_aligned = MINIMAP2_ALIGN.out.bam.mix(FILL_SECONDARY_SEQ.out.bam)
-
-    // MINIMAP2_ALIGN already emits coordinate-sorted+indexed BAM; FILL_SECONDARY_SEQ emits sorted BAM
+    // RAMMAP_ALIGN emits coordinate-sorted+indexed BAM for every platform
     if (params.min_alignment_proportion_filter) {
         FILTER_BAM(ch_aligned)
         ch_for_downstream = FILTER_BAM.out.filtered_bam

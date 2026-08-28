@@ -14,13 +14,13 @@
 
   > Shaw J, Yu YW. Rapid species-level metagenome profiling and containment estimation with sylph. Nat Biotechnol. 2025 Aug;43(8):1348-1359. Epub 2024 Oct 8. doi: 10.1038/s41587-024-02412-y. PubMed PMID: 39379646; PubMed Central PMCID: PMC12339375.
 
+- [rammap](https://github.com/jwanglab/rammap)
+
+  > A minimap2-compatible aligner, used here for both ONT and Illumina reads.
+
 - [minimap2](https://github.com/lh3/minimap2)
 
   > Li H. Minimap2: pairwise alignment for nucleotide sequences. Bioinformatics. 2018 Sep 15;34(18):3094-3100. doi: 10.1093/bioinformatics/bty191. PubMed PMID: 29750242; PubMed Central PMCID: PMC6137996.
-
-- [bwa-mem2](https://github.com/bwa-mem2/bwa-mem2)
-
-  > Vasimuddin M, Misra S, Li H, Aluru S. Efficient Architecture-Aware Acceleration of BWA-MEM for Multicore Systems. 2019 IEEE International Parallel and Distributed Processing Symposium (IPDPS), 2019, pp. 314-324. doi: 10.1109/IPDPS.2019.00041.
 
 - [Samtools](https://pubmed.ncbi.nlm.nih.gov/19505943/)
 
@@ -28,7 +28,7 @@
 
 - [pysam](https://github.com/pysam-developers/pysam)
 
-  > Used throughout the pipeline's custom BAM-processing scripts (`bin/bam_filter.py`, `bin/fill_secondary_seq.py`, `bin/generate_alignment_report.py`); a Python interface to htslib and the SAMtools/BCFtools suite.
+  > Used throughout the pipeline's custom BAM-processing scripts (`bin/bam_filter.py`, `bin/generate_alignment_report.py`); a Python interface to htslib and the SAMtools/BCFtools suite.
 
 - [GTDB](https://gtdb.ecogenomic.org/)
 

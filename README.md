@@ -13,17 +13,16 @@
 
 ## Introduction
 
-**CLIMB-TRE/chimera** is a bioinformatics pipeline for profiling Illumina and Nanopore (ONT) sequencing reads against a curated reference database and flagging how confidently each detected reference is actually supported by the read data. It runs [sylph](https://github.com/bluenote-1577/sylph) for fast taxonomic profiling of raw reads, aligns reads to the reference database with [minimap2](https://github.com/lh3/minimap2) (ONT) or [bwa-mem2](https://github.com/bwa-mem2/bwa-mem2) (Illumina), and combines per-reference coverage and alignment-quality statistics into a scored confidence report — helping to distinguish genuine hits from cross-mapping, contamination, or other low-confidence alignments.
+**CLIMB-TRE/chimera** is a bioinformatics pipeline for profiling Illumina and Nanopore (ONT) sequencing reads against a curated reference database and flagging how confidently each detected reference is actually supported by the read data. It runs [sylph](https://github.com/bluenote-1577/sylph) for fast taxonomic profiling of raw reads, aligns reads to the reference database with [rammap](https://github.com/jwanglab/rammap) (a single minimap2-compatible aligner used for both ONT and Illumina data), and combines per-reference coverage and alignment-quality statistics into a scored confidence report — helping to distinguish genuine hits from cross-mapping, contamination, or other low-confidence alignments.
 
 The pipeline:
 
 1. Profiles each sample's taxonomic composition against a sylph database (`SYLPH_PROFILE`)
-2. Aligns reads to a reference database with minimap2 (ONT) or bwa-mem2 (Illumina) (`MINIMAP2_ALIGN`/`BWAMEM2_MEM`)
-3. For Illumina data, expands multi-mapping loci into full secondary alignment records with sequence filled in (`FILL_SECONDARY_SEQ`)
-4. Optionally filters out reads with a low proportion of aligned bases (`FILTER_BAM`)
-5. Computes per-base, per-reference depth of coverage (`SAMTOOLS_DEPTH`)
-6. Resolves the sylph profile's reference genomes to NCBI taxIDs (`SYLPH_TAXONOMY`)
-7. Produces a per-reference alignment report with configurable confidence scoring (`ALIGNMENT_REPORT`)
+2. Aligns reads to a reference database with rammap, using a platform-specific preset (`RAMMAP_ALIGN`)
+3. Optionally filters out reads with a low proportion of aligned bases (`FILTER_BAM`)
+4. Computes per-base, per-reference depth of coverage (`SAMTOOLS_DEPTH`)
+5. Resolves the sylph profile's reference genomes to NCBI taxIDs (`SYLPH_TAXONOMY`)
+6. Produces a per-reference alignment report with configurable confidence scoring (`ALIGNMENT_REPORT`)
 
 ## Usage
 
@@ -39,7 +38,7 @@ sample,platform,fastq_1,fastq_2
 CONTROL_REP1,illumina,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
 ```
 
-Each row represents a fastq file (`platform` of `ont` or `illumina.se`) or a pair of fastq files (`platform` of `illumina`). See [`docs/usage.md`](docs/usage.md) for the full samplesheet specification and for the reference database parameters (`--mm2_index`, `--bwa_index_prefix`, `--sylph_db`, `--sylph_taxdb`, `--database_metadata`) the pipeline requires.
+Each row represents a fastq file (`platform` of `ont` or `illumina.se`) or a pair of fastq files (`platform` of `illumina`). See [`docs/usage.md`](docs/usage.md) for the full samplesheet specification and for the reference database parameters (`--rammap_index`, `--sylph_db`, `--sylph_taxdb`, `--database_metadata`) the pipeline requires.
 
 Now, you can run the pipeline using:
 
@@ -48,8 +47,7 @@ nextflow run CLIMB-TRE/chimera \
    -profile <docker/singularity/.../institute> \
    --input samplesheet.csv \
    --outdir <OUTDIR> \
-   --mm2_index /path/to/reference.mmi \
-   --bwa_index_prefix /path/to/reference.fa \
+   --rammap_index /path/to/reference.mmi \
    --sylph_db /path/to/reference.syldb \
    --sylph_taxdb /path/to/sylph_taxdb.tsv \
    --database_metadata /path/to/database_metadata.tsv
