@@ -24,18 +24,19 @@
                     "sylph": "0.7.0"
                 },
                 "Workflow": {
-                    "CLIMB-TRE/chimera": "v0.4.0"
+                    "CLIMB-TRE/chimera": "v0.4.1"
                 }
             },
             [
                 "illumina_test",
                 "illumina_test/illumina_test.alignment_report.tsv",
                 "illumina_test/illumina_test.bam",
-                "illumina_test/illumina_test.secondary_filled.bam",
+                "illumina_test/illumina_test.bam.bai",
                 "illumina_test/illumina_test.sylph_taxonomy_report.tsv",
                 "ont_test",
                 "ont_test/ont_test.alignment_report.tsv",
                 "ont_test/ont_test.bam",
+                "ont_test/ont_test.bam.bai",
                 "pipeline_info",
                 "pipeline_info/chimera_software_versions.yml"
             ],
@@ -45,10 +46,10 @@
                 "ont_test.alignment_report.tsv:md5,b7e7e90d08334eb5b206720562ded109"
             ]
         ],
-        "timestamp": "2026-08-25T11:26:52.248475",
+        "timestamp": "2026-08-31T08:31:41.491956",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.0"
+            "nextflow": "26.04.6"
         }
     }
 }
